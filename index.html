@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Micro-Economy Simulator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242836;
+    --border: #2e3345;
+    --text: #e4e4e7;
+    --text-dim: #9ca3af;
+    --accent: #6366f1;
+    --accent2: #8b5cf6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f59e0b;
+    --blue: #3b82f6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+
+  .header {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h1 { font-size: 1.4rem; font-weight: 600; }
+  .header h1 span { color: var(--accent); }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .mode-badge {
+    font-size: 0.75rem; padding: 4px 10px; border-radius: 12px;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+  }
+  .mode-badge.live { border-color: var(--green); color: var(--green); }
+
+  .controls {
+    padding: 16px 32px; display: flex; gap: 12px; align-items: center;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .controls label { font-size: 0.85rem; color: var(--text-dim); }
+  .controls input[type="number"] {
+    width: 60px; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 8px; border-radius: 6px; font-size: 0.85rem;
+  }
+  .btn {
+    padding: 8px 20px; border-radius: 8px; border: none; cursor: pointer;
+    font-weight: 600; font-size: 0.85rem; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); }
+
+  .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px 32px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; min-height: 300px;
+  }
+  .card h2 {
+    font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 16px; font-weight: 500;
+  }
+  .card.full-width { grid-column: 1 / -1; }
+
+  /* Agent cards */
+  .agents-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .agent-card {
+    background: var(--surface2); border-radius: 8px; padding: 14px;
+    border: 1px solid var(--border); transition: border-color 0.3s;
+  }
+  .agent-card.active { border-color: var(--accent); }
+  .agent-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 6px; }
+  .agent-stat { font-size: 0.8rem; color: var(--text-dim); margin: 2px 0; }
+  .agent-stat .val { color: var(--text); font-weight: 500; }
+  .agent-thought {
+    font-size: 0.75rem; color: var(--accent); margin-top: 8px;
+    font-style: italic; line-height: 1.4;
+    max-height: 40px; overflow: hidden;
+  }
+
+  /* Trade log */
+  .trade-log { max-height: 350px; overflow-y: auto; }
+  .trade-entry {
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    font-size: 0.82rem; display: flex; gap: 8px; align-items: center;
+  }
+  .trade-round {
+    font-size: 0.7rem; background: var(--surface2); padding: 2px 8px;
+    border-radius: 4px; color: var(--text-dim); min-width: 36px; text-align: center;
+  }
+  .trade-action { flex: 1; }
+  .trade-price { color: var(--green); font-weight: 500; }
+
+  /* Status bar */
+  .status-bar {
+    padding: 10px 32px; background: var(--surface);
+    border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-dim);
+    display: flex; justify-content: space-between;
+  }
+  .round-indicator { color: var(--accent); font-weight: 600; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Chart containers */
+  .chart-container { position: relative; height: 250px; }
+
+  /* Empty state */
+  .empty-state {
+    display: flex; align-items: center; justify-content: center;
+    height: 200px; color: var(--text-dim); font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>⚡</span> Micro-Economy Simulator</h1>
+  <div class="header-right">
+    <a href="/experiments" style="color: #9ca3af; text-decoration: none; font-size: 0.85rem;">Experiments</a>
+    <a href="/dgp" style="color: #9ca3af; text-decoration: none; font-size: 0.85rem;">DGP</a>
+    <div class="mode-badge" id="modeBadge">Loading...</div>
+  </div>
+</div>
+
+<div class="controls">
+  <label>Rounds:</label>
+  <input type="number" id="roundsInput" value="20" min="1" max="100">
+  <label>Delay (s):</label>
+  <input type="number" id="delayInput" value="1.5" min="0.1" max="10" step="0.1">
+  <button class="btn btn-primary" id="startBtn" onclick="startSimulation()">Run Simulation</button>
+  <button class="btn btn-secondary" id="stopBtn" onclick="stopSimulation()" style="display:none">Stop</button>
+</div>
+
+<div class="dashboard">
+  <!-- Price chart -->
+  <div class="card">
+    <h2>Market Prices</h2>
+    <div class="chart-container"><canvas id="priceChart"></canvas></div>
+  </div>
+
+  <!-- Net worth chart -->
+  <div class="card">
+    <h2>Agent Net Worth</h2>
+    <div class="chart-container"><canvas id="wealthChart"></canvas></div>
+  </div>
+
+  <!-- Agent cards -->
+  <div class="card full-width">
+    <h2>Agents</h2>
+    <div class="agents-grid" id="agentsGrid">
+      <div class="empty-state">Press "Run Simulation" to begin</div>
+    </div>
+  </div>
+
+  <!-- Trade log -->
+  <div class="card">
+    <h2>Trade Log</h2>
+    <div class="trade-log" id="tradeLog">
+      <div class="empty-state">No trades yet</div>
+    </div>
+  </div>
+
+  <!-- Agent thoughts -->
+  <div class="card">
+    <h2>Agent Thoughts</h2>
+    <div class="trade-log" id="thoughtsLog">
+      <div class="empty-state">Waiting for agents to think...</div>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span id="statusText">Ready</span>
+  <span>Round: <span class="round-indicator" id="roundNum">0</span></span>
+</div>
+
+<script>
+const COLORS = {
+  food: '#22c55e',
+  tools: '#3b82f6',
+  luxury: '#f59e0b',
+  medicine: '#ef4444',
+};
+const AGENT_COLORS = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#22c55e','#3b82f6'];
+
+let priceChart, wealthChart;
+let eventSource = null;
+let priceHistory = [];
+let wealthHistory = [];
+
+// --- Charts ---
+function initCharts() {
+  const priceCtx = document.getElementById('priceChart').getContext('2d');
+  priceChart = new Chart(priceCtx, {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    options: chartOpts('Price ($)'),
+  });
+
+  const wealthCtx = document.getElementById('wealthChart').getContext('2d');
+  wealthChart = new Chart(wealthCtx, {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    options: chartOpts('Net Worth ($)'),
+  });
+}
+
+function chartOpts(yLabel) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    animation: { duration: 300 },
+    plugins: {
+      legend: { labels: { color: '#9ca3af', font: { size: 11 } } },
+    },
+    scales: {
+      x: { ticks: { color: '#9ca3af' }, grid: { color: '#2e3345' } },
+      y: { title: { display: true, text: yLabel, color: '#9ca3af' },
+           ticks: { color: '#9ca3af' }, grid: { color: '#2e3345' } },
+    },
+  };
+}
+
+function updatePriceChart(round, prices) {
+  if (!priceChart.data.datasets.length) {
+    for (const good of Object.keys(prices)) {
+      priceChart.data.datasets.push({
+        label: good, data: [], borderColor: COLORS[good],
+        backgroundColor: COLORS[good] + '20', borderWidth: 2, pointRadius: 2, tension: 0.3,
+      });
+    }
+  }
+  priceChart.data.labels.push(`R${round}`);
+  for (const ds of priceChart.data.datasets) {
+    ds.data.push(prices[ds.label]);
+  }
+  priceChart.update();
+}
+
+function updateWealthChart(round, agents) {
+  if (!wealthChart.data.datasets.length) {
+    agents.forEach((a, i) => {
+      wealthChart.data.datasets.push({
+        label: a.name, data: [], borderColor: AGENT_COLORS[i % AGENT_COLORS.length],
+        borderWidth: 2, pointRadius: 2, tension: 0.3,
+      });
+    });
+  }
+  wealthChart.data.labels.push(`R${round}`);
+  agents.forEach((a, i) => {
+    wealthChart.data.datasets[i].data.push(a.net_worth);
+  });
+  wealthChart.update();
+}
+
+// --- Agents grid ---
+function renderAgents(agents, thoughts) {
+  const grid = document.getElementById('agentsGrid');
+  const thoughtMap = {};
+  (thoughts || []).forEach(t => { thoughtMap[t.agent] = t.thought; });
+
+  grid.innerHTML = agents.map((a, i) => {
+    const invStr = Object.entries(a.inventory)
+      .filter(([_, v]) => v > 0)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(', ') || 'empty';
+    const thought = thoughtMap[a.name] || '';
+    return `
+      <div class="agent-card ${thought ? 'active' : ''}">
+        <div class="agent-name" style="color: ${AGENT_COLORS[i % AGENT_COLORS.length]}">${a.name}</div>
+        <div class="agent-stat">Budget: <span class="val">$${a.budget.toFixed(2)}</span></div>
+        <div class="agent-stat">Net worth: <span class="val">$${a.net_worth.toFixed(2)}</span></div>
+        <div class="agent-stat">Inventory: <span class="val">${invStr}</span></div>
+        ${thought ? `<div class="agent-thought">"${thought}"</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+// --- Trade log ---
+function appendTrades(trades, round) {
+  const log = document.getElementById('tradeLog');
+  if (log.querySelector('.empty-state')) log.innerHTML = '';
+
+  for (const t of trades) {
+    const entry = document.createElement('div');
+    entry.className = 'trade-entry';
+    entry.innerHTML = `
+      <span class="trade-round">R${round}</span>
+      <span class="trade-action">${t.buyer} ← ${t.quantity} ${t.good} ← ${t.seller}</span>
+      <span class="trade-price">$${t.price.toFixed(2)}</span>`;
+    log.prepend(entry);
+  }
+}
+
+function appendThoughts(thoughts, round) {
+  const log = document.getElementById('thoughtsLog');
+  if (log.querySelector('.empty-state')) log.innerHTML = '';
+
+  for (const t of thoughts) {
+    const entry = document.createElement('div');
+    entry.className = 'trade-entry';
+    entry.innerHTML = `
+      <span class="trade-round">R${round}</span>
+      <span class="trade-action"><strong>${t.agent}:</strong> ${t.thought}</span>`;
+    log.prepend(entry);
+  }
+}
+
+// --- Simulation control ---
+function startSimulation() {
+  // Close any existing connection first
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
+
+  // Reset
+  if (priceChart) priceChart.destroy();
+  if (wealthChart) wealthChart.destroy();
+  initCharts();
+  document.getElementById('tradeLog').innerHTML = '<div class="empty-state">No trades yet</div>';
+  document.getElementById('thoughtsLog').innerHTML = '<div class="empty-state">Waiting for agents to think...</div>';
+
+  const rounds = document.getElementById('roundsInput').value;
+  const delay = document.getElementById('delayInput').value;
+
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('stopBtn').style.display = '';
+  document.getElementById('statusText').textContent = 'Simulation running...';
+
+  eventSource = new EventSource(`/api/stream?rounds=${rounds}&delay=${delay}`);
+
+  eventSource.addEventListener('init', (e) => {
+    const data = JSON.parse(e.data);
+    renderAgents(data.agents, []);
+    document.getElementById('roundNum').textContent = '0';
+  });
+
+  eventSource.addEventListener('round', (e) => {
+    const data = JSON.parse(e.data);
+    document.getElementById('roundNum').textContent = data.round;
+    updatePriceChart(data.round, data.prices);
+    updateWealthChart(data.round, data.agents);
+    renderAgents(data.agents, data.thoughts);
+    if (data.trades.length) appendTrades(data.trades, data.round);
+    if (data.thoughts.length) appendThoughts(data.thoughts, data.round);
+  });
+
+  eventSource.addEventListener('complete', (e) => {
+    const data = JSON.parse(e.data);
+    document.getElementById('statusText').textContent =
+      `Simulation complete — ${data.total_trades} trades over ${data.round} rounds`;
+    eventSource.close();
+    cleanup();
+  });
+
+  eventSource.onerror = () => {
+    // Only show error if we didn't already close intentionally
+    if (eventSource) {
+      eventSource.close();
+      document.getElementById('statusText').textContent = 'Connection lost';
+      cleanup();
+    }
+  };
+}
+
+function stopSimulation() {
+  if (eventSource) eventSource.close();
+  document.getElementById('statusText').textContent = 'Simulation stopped';
+  cleanup();
+}
+
+function cleanup() {
+  eventSource = null;
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('stopBtn').style.display = 'none';
+}
+
+// --- Init ---
+async function init() {
+  initCharts();
+  try {
+    const resp = await fetch('/api/config');
+    const config = await resp.json();
+    const badge = document.getElementById('modeBadge');
+    if (config.llm_mode !== 'mock') {
+      badge.textContent = `LLM: ${config.model}`;
+      badge.classList.add('live');
+    } else {
+      badge.textContent = 'Mock mode (no API key)';
+    }
+  } catch { }
+}
+
+init();
+</script>
+</body>
+</html>

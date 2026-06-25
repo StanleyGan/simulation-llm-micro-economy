@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Experiments — Micro-Economy Simulator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #242836; --border: #2e3345;
+    --text: #e4e4e7; --text-dim: #9ca3af; --accent: #6366f1; --accent2: #8b5cf6;
+    --green: #22c55e; --red: #ef4444; --orange: #f59e0b; --blue: #3b82f6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+
+  .header {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    border-bottom: 1px solid var(--border); padding: 20px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h1 { font-size: 1.4rem; font-weight: 600; }
+  .header h1 span { color: var(--accent); }
+  .nav-links { display: flex; gap: 16px; }
+  .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-links a.active { color: var(--accent); font-weight: 600; }
+
+  .controls {
+    padding: 16px 32px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .controls label { font-size: 0.85rem; color: var(--text-dim); }
+  .controls input[type="number"] {
+    width: 60px; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 8px; border-radius: 6px; font-size: 0.85rem;
+  }
+  .btn {
+    padding: 8px 20px; border-radius: 8px; border: none; cursor: pointer;
+    font-weight: 600; font-size: 0.85rem; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .config-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    padding: 4px 12px; border-radius: 16px; font-size: 0.8rem; cursor: pointer;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+    transition: all 0.2s; user-select: none;
+  }
+  .chip.selected { border-color: var(--accent); color: var(--accent); background: #6366f115; }
+
+  .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px 32px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; min-height: 280px;
+  }
+  .card h2 {
+    font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 16px; font-weight: 500;
+  }
+  .card.full-width { grid-column: 1 / -1; }
+  .chart-container { position: relative; height: 280px; }
+
+  /* Progress */
+  .progress-bar {
+    width: 100%; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden;
+    margin: 8px 0;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 3px; transition: width 0.3s;
+  }
+  .progress-text { font-size: 0.8rem; color: var(--text-dim); }
+
+  /* Summary table */
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .summary-table th {
+    text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border);
+    color: var(--text-dim); font-weight: 500;
+  }
+  .summary-table td {
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+  }
+  .summary-table tr:hover { background: var(--surface2); }
+
+  .empty-state {
+    display: flex; align-items: center; justify-content: center;
+    height: 200px; color: var(--text-dim); font-size: 0.9rem;
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>🔬</span> Experiment Runner</h1>
+  <div class="nav-links">
+    <a href="/">Simulation</a>
+    <a href="/experiments" class="active">Experiments</a>
+    <a href="/dgp">DGP</a>
+  </div>
+</div>
+
+<div class="controls">
+  <label>Configs:</label>
+  <div class="config-chips" id="configChips"></div>
+  <label style="margin-left: 12px;">Runs:</label>
+  <input type="number" id="runsInput" value="10" min="1" max="50">
+  <label>Rounds:</label>
+  <input type="number" id="roundsInput" value="20" min="1" max="100">
+  <button class="btn btn-primary" id="runBtn" onclick="runExperiment()">Run Experiment</button>
+</div>
+
+<div id="progressSection" style="padding: 8px 32px; display: none;">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 0%"></div></div>
+  <div class="progress-text" id="progressText">Starting...</div>
+</div>
+
+<div class="dashboard">
+  <div class="card">
+    <h2>Gini Coefficient (Inequality)</h2>
+    <div class="chart-container"><canvas id="giniChart"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>Price Volatility</h2>
+    <div class="chart-container"><canvas id="volChart"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>Trade Volume</h2>
+    <div class="chart-container"><canvas id="tradeChart"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>Market Efficiency (lower = more stable)</h2>
+    <div class="chart-container"><canvas id="effChart"></canvas></div>
+  </div>
+  <div class="card full-width">
+    <h2>Summary Table</h2>
+    <div id="summaryTable"><div class="empty-state">Run an experiment to see results</div></div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#22c55e','#3b82f6'];
+let configs = {};
+let selectedConfigs = new Set();
+let charts = {};
+let summaryData = {};
+
+async function init() {
+  const resp = await fetch('/api/experiments/configs');
+  configs = await resp.json();
+  const chips = document.getElementById('configChips');
+  Object.keys(configs).forEach(name => {
+    selectedConfigs.add(name);
+    const chip = document.createElement('span');
+    chip.className = 'chip selected';
+    chip.textContent = name;
+    chip.onclick = () => {
+      if (selectedConfigs.has(name)) { selectedConfigs.delete(name); chip.classList.remove('selected'); }
+      else { selectedConfigs.add(name); chip.classList.add('selected'); }
+    };
+    chips.appendChild(chip);
+  });
+}
+
+function makeBoxData(groups, key, extractFn) {
+  const labels = Object.keys(groups);
+  const datasets = [{
+    label: key,
+    data: labels.map(l => {
+      const vals = groups[l].map(extractFn);
+      const sorted = [...vals].sort((a,b) => a - b);
+      const mean = vals.reduce((a,b) => a+b, 0) / vals.length;
+      return mean;
+    }),
+    backgroundColor: labels.map((_, i) => COLORS[i % COLORS.length] + '99'),
+    borderColor: labels.map((_, i) => COLORS[i % COLORS.length]),
+    borderWidth: 2,
+  }];
+  return { labels, datasets };
+}
+
+function makeErrorBars(groups, extractFn) {
+  const labels = Object.keys(groups);
+  return labels.map(l => {
+    const vals = groups[l].map(extractFn);
+    const mean = vals.reduce((a,b) => a+b, 0) / vals.length;
+    const std = Math.sqrt(vals.reduce((a,v) => a + (v-mean)**2, 0) / vals.length);
+    return { mean, std, min: Math.min(...vals), max: Math.max(...vals) };
+  });
+}
+
+function createBarChart(canvasId, groups, extractFn, ylabel) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  const labels = Object.keys(groups);
+  const stats = makeErrorBars(groups, extractFn);
+
+  if (charts[canvasId]) charts[canvasId].destroy();
+  charts[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: stats.map(s => s.mean),
+        backgroundColor: labels.map((_, i) => COLORS[i % COLORS.length] + '99'),
+        borderColor: labels.map((_, i) => COLORS[i % COLORS.length]),
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const s = stats[ctx.dataIndex];
+              return `Mean: ${s.mean.toFixed(4)} ± ${s.std.toFixed(4)} [${s.min.toFixed(4)}–${s.max.toFixed(4)}]`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#9ca3af', maxRotation: 25 }, grid: { color: '#2e3345' } },
+        y: { title: { display: true, text: ylabel, color: '#9ca3af' },
+             ticks: { color: '#9ca3af' }, grid: { color: '#2e3345' } },
+      },
+    },
+  });
+}
+
+function updateCharts(allResults) {
+  const groups = {};
+  allResults.forEach(r => {
+    if (!groups[r.config]) groups[r.config] = [];
+    groups[r.config].push(r);
+  });
+
+  createBarChart('giniChart', groups, r => r.gini, 'Gini Coefficient');
+  createBarChart('volChart', groups, r => r.avg_volatility, 'Avg Coefficient of Variation');
+  createBarChart('tradeChart', groups, r => r.trade_volume.total_trades, 'Number of Trades');
+  createBarChart('effChart', groups, r => r.market_efficiency, 'Normalized Price Change');
+}
+
+function updateSummaryTable(configSummaries) {
+  const container = document.getElementById('summaryTable');
+  const configs = Object.keys(configSummaries);
+  if (!configs.length) return;
+
+  let html = `<table class="summary-table">
+    <tr><th>Configuration</th><th>Gini (mean±std)</th><th>Volatility</th><th>Trades</th></tr>`;
+  configs.forEach(c => {
+    const s = configSummaries[c];
+    html += `<tr>
+      <td><strong>${c}</strong></td>
+      <td>${s.gini_mean.toFixed(4)} ± ${s.gini_std.toFixed(4)}</td>
+      <td>${s.volatility_mean.toFixed(4)} ± ${s.volatility_std.toFixed(4)}</td>
+      <td>${s.trades_mean.toFixed(1)} ± ${s.trades_std.toFixed(1)}</td>
+    </tr>`;
+  });
+  html += '</table>';
+  container.innerHTML = html;
+}
+
+function runExperiment() {
+  const selected = [...selectedConfigs];
+  if (!selected.length) return alert('Select at least one configuration');
+
+  const runs = document.getElementById('runsInput').value;
+  const rounds = document.getElementById('roundsInput').value;
+  const configsParam = selected.join(',');
+
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('progressSection').style.display = '';
+  document.getElementById('progressFill').style.width = '0%';
+  summaryData = {};
+
+  const allResults = [];
+  const es = new EventSource(`/api/experiments/run?configs=${configsParam}&runs=${runs}&rounds=${rounds}`);
+
+  es.addEventListener('progress', (e) => {
+    const d = JSON.parse(e.data);
+    const pct = (d.completed / d.total * 100).toFixed(0);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressText').textContent =
+      `${d.config} run ${d.run_id + 1} — ${d.completed}/${d.total} (${pct}%)`;
+    allResults.push(d.metrics);
+    updateCharts(allResults);
+  });
+
+  es.addEventListener('config_complete', (e) => {
+    const d = JSON.parse(e.data);
+    summaryData[d.config] = d.summary;
+    updateSummaryTable(summaryData);
+  });
+
+  es.addEventListener('complete', () => {
+    es.close();
+    document.getElementById('runBtn').disabled = false;
+    document.getElementById('progressText').textContent = 'Experiment complete!';
+  });
+
+  es.onerror = () => {
+    es.close();
+    document.getElementById('runBtn').disabled = false;
+    document.getElementById('progressText').textContent = 'Connection lost';
+  };
+}
+
+init();
+</script>
+</body>
+</html>

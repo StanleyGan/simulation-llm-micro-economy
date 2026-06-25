@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGP Ground Truth Simulation</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242836;
+    --border: #2e3345;
+    --text: #e4e4e7;
+    --text-dim: #9ca3af;
+    --accent: #6366f1;
+    --accent2: #8b5cf6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f59e0b;
+    --blue: #3b82f6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+
+  .header {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h1 { font-size: 1.4rem; font-weight: 600; }
+  .header h1 span { color: var(--accent); }
+  .nav-links { display: flex; gap: 16px; }
+  .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-links a.active { color: var(--accent); }
+
+  .controls {
+    padding: 16px 32px; display: flex; gap: 12px; align-items: center;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .controls label { font-size: 0.85rem; color: var(--text-dim); }
+  .controls input[type="number"] {
+    width: 60px; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 8px; border-radius: 6px; font-size: 0.85rem;
+  }
+  .btn {
+    padding: 8px 20px; border-radius: 8px; border: none; cursor: pointer;
+    font-weight: 600; font-size: 0.85rem; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px 32px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; min-height: 300px;
+  }
+  .card h2 {
+    font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 16px; font-weight: 500;
+  }
+  .card.full-width { grid-column: 1 / -1; }
+  .chart-container { position: relative; height: 280px; }
+  .empty-state {
+    display: flex; align-items: center; justify-content: center;
+    height: 200px; color: var(--text-dim); font-size: 0.9rem;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 4px; background: var(--surface2); border-radius: 2px;
+    margin: 8px 0; display: none;
+  }
+  .progress-bar .fill {
+    height: 100%; background: var(--accent); border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  /* Summary table */
+  .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 0.85rem;
+  }
+  .summary-table th {
+    text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border);
+    color: var(--text-dim); font-weight: 500;
+  }
+  .summary-table td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+  }
+  .summary-table tr:hover { background: var(--surface2); }
+  .rank-badge {
+    display: inline-block; width: 24px; height: 24px; line-height: 24px;
+    text-align: center; border-radius: 50%; font-weight: 600; font-size: 0.75rem;
+  }
+
+  .status-bar {
+    padding: 10px 32px; background: var(--surface);
+    border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-dim);
+    display: flex; justify-content: space-between;
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>📊</span> DGP Ground Truth Simulation</h1>
+  <div class="nav-links">
+    <a href="/">LLM Simulation</a>
+    <a href="/experiments">Experiments</a>
+    <a href="/dgp" class="active">DGP</a>
+  </div>
+</div>
+
+<div class="controls">
+  <label>Samples/archetype:</label>
+  <input type="number" id="samplesInput" value="10" min="1" max="50">
+  <label>Rounds:</label>
+  <input type="number" id="roundsInput" value="20" min="1" max="100">
+  <label>Seed:</label>
+  <input type="number" id="seedInput" value="42" min="1" max="9999">
+  <button class="btn btn-primary" id="runBtn" onclick="runDGP()">Run DGP</button>
+</div>
+
+<div class="progress-bar" id="progressBar"><div class="fill" id="progressFill"></div></div>
+
+<div class="dashboard">
+  <!-- Current group wealth trajectories -->
+  <div class="card">
+    <h2>Wealth Trajectories (Current Group)</h2>
+    <div class="chart-container"><canvas id="trajectoryChart"></canvas></div>
+  </div>
+
+  <!-- Market prices for current group -->
+  <div class="card">
+    <h2>Market Prices (Current Group)</h2>
+    <div class="chart-container"><canvas id="priceChart"></canvas></div>
+  </div>
+
+  <!-- Archetype comparison — mean final wealth -->
+  <div class="card">
+    <h2>Final Wealth by Archetype (All Groups)</h2>
+    <div class="chart-container"><canvas id="wealthBarChart"></canvas></div>
+  </div>
+
+  <!-- Archetype comparison — mean rank -->
+  <div class="card">
+    <h2>Average Rank by Archetype (All Groups)</h2>
+    <div class="chart-container"><canvas id="rankBarChart"></canvas></div>
+  </div>
+
+  <!-- All trajectories overlay -->
+  <div class="card full-width">
+    <h2>All Wealth Trajectories by Archetype</h2>
+    <div class="chart-container" style="height: 350px;"><canvas id="allTrajChart"></canvas></div>
+  </div>
+
+  <!-- Summary table -->
+  <div class="card full-width">
+    <h2>Archetype Summary</h2>
+    <div id="summaryTable">
+      <div class="empty-state">Run simulation to see results</div>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span id="statusText">Ready</span>
+  <span>Group: <span id="groupNum">0</span> / <span id="totalGroups">0</span></span>
+</div>
+
+<script>
+const ARCH_COLORS = {
+  'cautious_farmer': '#22c55e',
+  'aggressive_merchant': '#ef4444',
+  'pragmatic_doctor': '#3b82f6',
+  'shrewd_speculator': '#f59e0b',
+  'fair_toolmaker': '#8b5cf6',
+  'survivalist': '#06b6d4',
+};
+const PRICE_COLORS = { food: '#22c55e', tools: '#3b82f6', luxury: '#f59e0b', medicine: '#ef4444' };
+
+let trajectoryChart, priceChart, wealthBarChart, rankBarChart, allTrajChart;
+let eventSource = null;
+let allTrajectories = {};  // archetype -> list of trajectory arrays
+
+function chartOpts(yLabel, showLegend = true) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    animation: { duration: 200 },
+    plugins: {
+      legend: { display: showLegend, labels: { color: '#9ca3af', font: { size: 11 } } },
+    },
+    scales: {
+      x: { ticks: { color: '#9ca3af' }, grid: { color: '#2e3345' } },
+      y: { title: { display: true, text: yLabel, color: '#9ca3af' },
+           ticks: { color: '#9ca3af' }, grid: { color: '#2e3345' } },
+    },
+  };
+}
+
+function barOpts(yLabel) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    animation: { duration: 300 },
+    plugins: {
+      legend: { display: false },
+    },
+    scales: {
+      x: { ticks: { color: '#9ca3af' }, grid: { color: '#2e3345' } },
+      y: { title: { display: true, text: yLabel, color: '#9ca3af' },
+           ticks: { color: '#9ca3af' }, grid: { color: '#2e3345' } },
+    },
+  };
+}
+
+function initCharts() {
+  if (trajectoryChart) trajectoryChart.destroy();
+  if (priceChart) priceChart.destroy();
+  if (wealthBarChart) wealthBarChart.destroy();
+  if (rankBarChart) rankBarChart.destroy();
+  if (allTrajChart) allTrajChart.destroy();
+
+  trajectoryChart = new Chart(document.getElementById('trajectoryChart'), {
+    type: 'line', data: { labels: [], datasets: [] }, options: chartOpts('Wealth ($)'),
+  });
+  priceChart = new Chart(document.getElementById('priceChart'), {
+    type: 'line', data: { labels: [], datasets: [] }, options: chartOpts('Price ($)'),
+  });
+  wealthBarChart = new Chart(document.getElementById('wealthBarChart'), {
+    type: 'bar', data: { labels: [], datasets: [] }, options: barOpts('Mean Final Wealth ($)'),
+  });
+  rankBarChart = new Chart(document.getElementById('rankBarChart'), {
+    type: 'bar', data: { labels: [], datasets: [] }, options: barOpts('Mean Rank (1 = best)'),
+  });
+  allTrajChart = new Chart(document.getElementById('allTrajChart'), {
+    type: 'line', data: { labels: [], datasets: [] }, options: chartOpts('Wealth ($)'),
+  });
+
+  allTrajectories = {};
+}
+
+// Accumulate archetype stats across groups
+let archStats = {};  // archetype -> { wealths: [], ranks: [] }
+
+function runDGP() {
+  if (eventSource) { eventSource.close(); eventSource = null; }
+
+  initCharts();
+  archStats = {};
+
+  const samples = document.getElementById('samplesInput').value;
+  const rounds = document.getElementById('roundsInput').value;
+  const seed = document.getElementById('seedInput').value;
+
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('progressBar').style.display = 'block';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('statusText').textContent = 'Starting DGP simulation...';
+  document.getElementById('summaryTable').innerHTML = '<div class="empty-state">Running...</div>';
+
+  eventSource = new EventSource(`/api/dgp/run?samples=${samples}&rounds=${rounds}&seed=${seed}`);
+
+  let totalGroups = 0;
+  let totalRounds = 0;
+  let currentGroupAgents = {};
+
+  eventSource.addEventListener('init', (e) => {
+    const data = JSON.parse(e.data);
+    totalGroups = data.total_groups;
+    totalRounds = data.rounds;
+    document.getElementById('totalGroups').textContent = totalGroups;
+  });
+
+  eventSource.addEventListener('round', (e) => {
+    const data = JSON.parse(e.data);
+    const { group, round: roundNum, prices, agents, trades } = data;
+
+    document.getElementById('groupNum').textContent = group + 1;
+    const progress = ((group * totalRounds + roundNum) / (totalGroups * totalRounds)) * 100;
+    document.getElementById('progressFill').style.width = `${progress}%`;
+    document.getElementById('statusText').textContent =
+      `Group ${group + 1}/${totalGroups}, Round ${roundNum}/${totalRounds} — ${trades} trades`;
+
+    // Update trajectory chart for current group
+    if (roundNum === 1) {
+      // Reset trajectory chart for new group
+      trajectoryChart.data.labels = [];
+      trajectoryChart.data.datasets = agents.map(a => ({
+        label: a.archetype,
+        data: [],
+        borderColor: ARCH_COLORS[a.archetype] || '#888',
+        borderWidth: 2, pointRadius: 0, tension: 0.3,
+      }));
+      // Reset price chart
+      priceChart.data.labels = [];
+      priceChart.data.datasets = Object.keys(prices).map(g => ({
+        label: g, data: [],
+        borderColor: PRICE_COLORS[g] || '#888',
+        borderWidth: 2, pointRadius: 0, tension: 0.3,
+      }));
+    }
+
+    trajectoryChart.data.labels.push(`R${roundNum}`);
+    agents.forEach((a, i) => {
+      trajectoryChart.data.datasets[i].data.push(a.wealth);
+    });
+    trajectoryChart.update('none');
+
+    priceChart.data.labels.push(`R${roundNum}`);
+    Object.entries(prices).forEach(([good, price]) => {
+      const ds = priceChart.data.datasets.find(d => d.label === good);
+      if (ds) ds.data.push(price);
+    });
+    priceChart.update('none');
+  });
+
+  eventSource.addEventListener('group_complete', (e) => {
+    const data = JSON.parse(e.data);
+    const { group, results } = data;
+
+    // Accumulate stats
+    for (const r of results) {
+      if (!archStats[r.archetype]) archStats[r.archetype] = { wealths: [], ranks: [], trajectories: [] };
+      archStats[r.archetype].wealths.push(r.final_wealth);
+      archStats[r.archetype].ranks.push(r.rank);
+      archStats[r.archetype].trajectories.push(r.wealth_trajectory);
+    }
+
+    // Update bar charts
+    updateBarCharts();
+  });
+
+  eventSource.addEventListener('complete', (e) => {
+    const data = JSON.parse(e.data);
+    eventSource.close();
+    eventSource = null;
+
+    document.getElementById('progressFill').style.width = '100%';
+    document.getElementById('statusText').textContent = 'DGP simulation complete';
+    document.getElementById('runBtn').disabled = false;
+
+    // Build all-trajectories chart
+    buildAllTrajChart();
+
+    // Build summary table
+    buildSummaryTable(data.summary);
+  });
+
+  eventSource.onerror = () => {
+    if (eventSource) {
+      eventSource.close();
+      document.getElementById('statusText').textContent = 'Connection lost';
+      document.getElementById('runBtn').disabled = false;
+      eventSource = null;
+    }
+  };
+}
+
+function updateBarCharts() {
+  const archetypes = Object.keys(archStats).sort();
+  const colors = archetypes.map(a => ARCH_COLORS[a] || '#888');
+
+  // Wealth bar
+  const meanWealth = archetypes.map(a => {
+    const w = archStats[a].wealths;
+    return w.reduce((s, v) => s + v, 0) / w.length;
+  });
+  wealthBarChart.data.labels = archetypes.map(a => a.replace('_', ' '));
+  wealthBarChart.data.datasets = [{
+    data: meanWealth,
+    backgroundColor: colors.map(c => c + '80'),
+    borderColor: colors,
+    borderWidth: 2,
+  }];
+  wealthBarChart.update('none');
+
+  // Rank bar
+  const meanRank = archetypes.map(a => {
+    const r = archStats[a].ranks;
+    return r.reduce((s, v) => s + v, 0) / r.length;
+  });
+  rankBarChart.data.labels = archetypes.map(a => a.replace('_', ' '));
+  rankBarChart.data.datasets = [{
+    data: meanRank,
+    backgroundColor: colors.map(c => c + '80'),
+    borderColor: colors,
+    borderWidth: 2,
+  }];
+  rankBarChart.update('none');
+}
+
+function buildAllTrajChart() {
+  const rounds = Math.max(...Object.values(archStats).flatMap(a => a.trajectories.map(t => t.length)));
+  allTrajChart.data.labels = Array.from({length: rounds}, (_, i) => `R${i}`);
+
+  const datasets = [];
+  for (const [arch, stats] of Object.entries(archStats).sort()) {
+    const color = ARCH_COLORS[arch] || '#888';
+    stats.trajectories.forEach((traj, idx) => {
+      datasets.push({
+        label: idx === 0 ? arch.replace('_', ' ') : '',
+        data: traj,
+        borderColor: color + '60',
+        borderWidth: 1,
+        pointRadius: 0,
+        tension: 0.3,
+      });
+    });
+  }
+  allTrajChart.data.datasets = datasets;
+
+  // Only show first occurrence of each archetype in legend
+  allTrajChart.options.plugins.legend.labels.filter = (item) => item.text !== '';
+  allTrajChart.update();
+}
+
+function buildSummaryTable(summary) {
+  const archetypes = Object.entries(summary).sort((a, b) => a[1].rank_mean - b[1].rank_mean);
+  const rankColors = ['#f59e0b', '#9ca3af', '#cd7f32', '#6366f1', '#6366f1', '#6366f1'];
+
+  let html = `<table class="summary-table">
+    <thead><tr>
+      <th>Rank</th><th>Archetype</th><th>Mean Wealth</th><th>Std</th><th>Mean Rank</th><th>Samples</th>
+    </tr></thead><tbody>`;
+
+  archetypes.forEach(([arch, data], idx) => {
+    const color = ARCH_COLORS[arch] || '#888';
+    html += `<tr>
+      <td><span class="rank-badge" style="background:${rankColors[idx]}20; color:${rankColors[idx]}">${idx + 1}</span></td>
+      <td style="color:${color}; font-weight:600">${arch.replace('_', ' ')}</td>
+      <td>$${data.wealth_mean.toLocaleString()}</td>
+      <td>±$${data.wealth_std.toLocaleString()}</td>
+      <td>${data.rank_mean.toFixed(1)}</td>
+      <td>${data.count}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('summaryTable').innerHTML = html;
+}
+
+</script>
+</body>
+</html>
