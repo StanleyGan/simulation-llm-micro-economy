@@ -98,7 +98,7 @@ uv run python run_llm_benchmark.py --style numeric --drop-feature production_ski
 
 ## Current Results (v3)
 
-60 agents per run, 10 rounds. DGP: 10 runs. LLM: 5 runs.
+60 agents per run, 10 rounds. DGP: 10 runs (seeds 42–51). LLM: 5 runs (seeds 42–46).
 
 | Condition | Mean Spearman ρ ± std | Archetype ρ |
 |-----------|----------------------|-------------|
@@ -106,3 +106,17 @@ uv run python run_llm_benchmark.py --style numeric --drop-feature production_ski
 | Narrative | 0.725 ± 0.010 | 0.829 |
 | Numeric + strategy | 0.736 ± 0.036 | 0.829 |
 | Narrative + strategy | 0.742 ± 0.026 | 0.829 |
+
+### Key Findings
+
+1. **Strong ordinal faithfulness**: The LLM reliably preserves wealth rankings across 60 agents (ρ = 0.71–0.74 per run, archetype ρ = 0.83), correctly identifying top and bottom performers. However, it captures rankings, not magnitudes — wealth is systematically deflated by 21–61%.
+
+2. **Textual anchoring bias overrides optimization rules**: "Aggressive merchant" is consistently overvalued (GT rank 41.6 → LLM rank ~27), while "cautious farmer" and "survivalist" are penalized (GT rank 38–46 → LLM rank 49–51). The LLM maps persona labels to trading outcomes through its own prior associations rather than the provided optimization logic.
+
+3. **Strategy guide helps within-archetype, not between**: Adding explicit CRRA optimization rules to the system prompt improves per-agent correlation by +0.02 but leaves archetype-level biases and ranking (ρ = 0.829) unchanged. The LLM uses the rules for finer-grained differentiation among similar agents, not for correcting its core archetype-level behavior.
+
+4. **Prompt style matters less than expected**: Numeric and narrative produce nearly identical results. Narrative has slightly higher mean ρ (0.725 vs 0.712) and lower variance (±0.010 vs ±0.031).
+
+5. **Compressed volatility**: LLM trajectory volatility falls into a narrower band (CV 0.073–0.099) than DGP (0.061–0.109), indicating the LLM doesn't fully differentiate risk-taking behavior by archetype.
+
+For the full report including per-run breakdowns, archetype-level comparisons, trajectory analysis, and strategy guide ablation results, see [benchmark_report_v3.md](benchmark_report_v3.md).
