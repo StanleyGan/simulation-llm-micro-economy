@@ -59,8 +59,33 @@ def compare_results(dgp_results: list[dict], llm_results: list[dict]) -> dict:
     # Find common keys
     common_keys = set(dgp_by_key.keys()) & set(llm_by_key.keys())
     if not common_keys:
-        print("ERROR: No matching (run_id, name) pairs found!")
-        return {}
+        # Fallback: match by (run_id, archetype, index) for neutral-label runs
+        dgp_by_run: dict[int, list] = defaultdict(list)
+        llm_by_run: dict[int, list] = defaultdict(list)
+        for r in dgp_results:
+            dgp_by_run[r["run_id"]].append(r)
+        for r in llm_results:
+            llm_by_run[r["run_id"]].append(r)
+
+        dgp_by_key = {}
+        llm_by_key = {}
+        for run_id in set(dgp_by_run) & set(llm_by_run):
+            dgp_by_arch: dict[str, list] = defaultdict(list)
+            llm_by_arch: dict[str, list] = defaultdict(list)
+            for r in dgp_by_run[run_id]:
+                dgp_by_arch[r["archetype"]].append(r)
+            for r in llm_by_run[run_id]:
+                llm_by_arch[r["archetype"]].append(r)
+            for arch in set(dgp_by_arch) & set(llm_by_arch):
+                for i, (d, l) in enumerate(zip(dgp_by_arch[arch], llm_by_arch[arch])):
+                    key = (run_id, f"{arch}_{i}")
+                    dgp_by_key[key] = d
+                    llm_by_key[key] = l
+
+        common_keys = set(dgp_by_key.keys()) & set(llm_by_key.keys())
+        if not common_keys:
+            print("ERROR: No matching agents found!")
+            return {}
 
     print(f"Matched {len(common_keys)} agent results across both simulations\n")
 
@@ -227,6 +252,21 @@ def plot_comparison(dgp_results: list[dict], llm_results: list[dict],
     dgp_by_key = {(r["run_id"], r["name"]): r for r in dgp_results}
     llm_by_key = {(r["run_id"], r["name"]): r for r in llm_results}
     common = set(dgp_by_key.keys()) & set(llm_by_key.keys())
+    if not common:
+        dgp_by_run_arch: dict[tuple, list] = defaultdict(list)
+        llm_by_run_arch: dict[tuple, list] = defaultdict(list)
+        for r in dgp_results:
+            dgp_by_run_arch[(r["run_id"], r["archetype"])].append(r)
+        for r in llm_results:
+            llm_by_run_arch[(r["run_id"], r["archetype"])].append(r)
+        dgp_by_key = {}
+        llm_by_key = {}
+        for grp in set(dgp_by_run_arch) & set(llm_by_run_arch):
+            for i, (d, l) in enumerate(zip(dgp_by_run_arch[grp], llm_by_run_arch[grp])):
+                key = (grp[0], f"{grp[1]}_{i}")
+                dgp_by_key[key] = d
+                llm_by_key[key] = l
+        common = set(dgp_by_key.keys()) & set(llm_by_key.keys())
 
     n_agents = comparison.get("agents_per_run", 60)
     for k in common:
