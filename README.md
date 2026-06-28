@@ -9,7 +9,7 @@ The DGP uses CRRA utility maximization; the LLM uses `gpt-4o-mini` with persona 
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-uv sync
+make install          # or: uv sync --group dev
 ```
 
 Create a `.env` file with your OpenAI API key:
@@ -21,16 +21,35 @@ OPENAI_API_KEY=sk-...
 ## Project Structure
 
 ```
+src/micro_economy/
 ├── models.py              # Shared data models (Good, Agent, MarketOrder, etc.)
 ├── simulation.py          # Market engine: order matching and trade execution
 ├── dgp.py                 # CRRA utility maximization (ground truth decisions)
 ├── dgp_personas.py        # 6 archetype definitions with feature distributions
-├── run_dgp.py             # DGP experiment runner
 ├── llm_agent.py           # LLM decision-making via OpenAI API
 ├── prompt_translator.py   # DGPFeatures → AgentPersona (numeric/narrative styles)
-├── run_llm_benchmark.py   # LLM experiment runner with ablation flags
-├── compare_benchmark.py   # Spearman ρ comparison and chart generation
-└── server.py              # FastAPI web app (optional)
+├── experiments.py         # Preset persona configurations
+└── metrics.py             # Economic metrics (Gini, volatility, efficiency)
+
+tests/
+├── test_dgp.py            # CRRA utility math and decision tests
+├── test_dgp_personas.py   # Archetype sampling tests
+├── test_prompt_translator.py  # Prompt generation and ablation tests
+└── test_simulation.py     # Market matching engine tests
+
+run_dgp.py                 # DGP experiment runner
+run_llm_benchmark.py       # LLM experiment runner with ablation flags
+compare_benchmark.py       # Spearman ρ comparison and chart generation
+server.py                  # FastAPI web app (optional)
+```
+
+## Development
+
+```bash
+make test             # Run tests
+make lint             # Check linting and formatting
+make format           # Auto-fix lint issues and format
+make ci               # Run lint + tests (same as CI)
 ```
 
 ## Running Experiments
