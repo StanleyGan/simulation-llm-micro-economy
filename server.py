@@ -13,7 +13,7 @@ load_dotenv()
 
 from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
-from run_dgp import create_dgp_agents
+from scripts.run_dgp import create_dgp_agents
 from sse_starlette.sse import EventSourceResponse
 
 from micro_economy.dgp_personas import ALL_ARCHETYPES, sample_population
@@ -30,7 +30,7 @@ _active_simulation: asyncio.Event | None = None
 @app.get("/", response_class=HTMLResponse)
 async def index():
     """Serve the frontend."""
-    html_path = Path(__file__).parent / "index.html"
+    html_path = Path(__file__).parent / "static/index.html"
     return HTMLResponse(html_path.read_text())
 
 
@@ -73,7 +73,7 @@ async def config():
 @app.get("/experiments", response_class=HTMLResponse)
 async def experiments_page():
     """Serve the experiments UI."""
-    html_path = Path(__file__).parent / "experiments.html"
+    html_path = Path(__file__).parent / "static/experiments.html"
     return HTMLResponse(html_path.read_text())
 
 
@@ -173,7 +173,7 @@ async def run_experiment_stream(
 @app.get("/dgp", response_class=HTMLResponse)
 async def dgp_page():
     """Serve the DGP simulation UI."""
-    html_path = Path(__file__).parent / "dgp.html"
+    html_path = Path(__file__).parent / "static/dgp.html"
     return HTMLResponse(html_path.read_text())
 
 

@@ -31,15 +31,16 @@ src/micro_economy/
 ├── experiments.py         # Preset persona configurations
 └── metrics.py             # Economic metrics (Gini, volatility, efficiency)
 
-tests/
-├── test_dgp.py            # CRRA utility math and decision tests
-├── test_dgp_personas.py   # Archetype sampling tests
-├── test_prompt_translator.py  # Prompt generation and ablation tests
-└── test_simulation.py     # Market matching engine tests
+scripts/
+├── run_dgp.py             # DGP experiment runner
+├── run_llm_benchmark.py   # LLM experiment runner with ablation flags
+├── compare_benchmark.py   # Spearman ρ comparison and chart generation
+├── analysis_deep.py       # Deep quantitative analysis
+└── charts.py              # Chart generation utilities
 
-run_dgp.py                 # DGP experiment runner
-run_llm_benchmark.py       # LLM experiment runner with ablation flags
-compare_benchmark.py       # Spearman ρ comparison and chart generation
+static/                    # Web frontend HTML files
+tests/                     # Test suite
+
 server.py                  # FastAPI web app (optional)
 ```
 
@@ -57,26 +58,26 @@ make ci               # Run lint + tests (same as CI)
 ### DGP Ground Truth
 
 ```bash
-uv run python run_dgp.py --runs 10 --seed 42 --output dgp_results_v3
+uv run python scripts/run_dgp.py --runs 10 --seed 42 --output dgp_results_v3
 ```
 
 ### LLM Benchmark
 
 ```bash
 # Numeric prompt style
-uv run python run_llm_benchmark.py --style numeric --runs 5 --seed 42 --output llm_numeric_v3
+uv run python scripts/run_llm_benchmark.py --style numeric --runs 5 --seed 42 --output llm_numeric_v3
 
 # Narrative prompt style
-uv run python run_llm_benchmark.py --style narrative --runs 5 --seed 42 --output llm_narrative_v3
+uv run python scripts/run_llm_benchmark.py --style narrative --runs 5 --seed 42 --output llm_narrative_v3
 
 # With CRRA strategy guide
-uv run python run_llm_benchmark.py --style numeric --with-strategy --runs 5 --seed 42 --output llm_numeric_strategy_v3
+uv run python scripts/run_llm_benchmark.py --style numeric --with-strategy --runs 5 --seed 42 --output llm_numeric_strategy_v3
 ```
 
 ### Compare Results
 
 ```bash
-uv run python compare_benchmark.py \
+uv run python scripts/compare_benchmark.py \
   --dgp dgp_results_v3/dgp_ground_truth.json \
   --llm llm_numeric_v3/llm_numeric_results.json \
   --output comparison_numeric_v3
@@ -89,8 +90,8 @@ uv run python compare_benchmark.py \
 Replace archetype labels (e.g., "cautious_farmer") with neutral names ("Agent_A") to test whether textual anchoring bias comes from labels vs. feature descriptions.
 
 ```bash
-uv run python run_llm_benchmark.py --style numeric --neutral-labels --runs 5 --seed 42 --output llm_neutral_numeric_v3
-uv run python run_llm_benchmark.py --style narrative --neutral-labels --runs 5 --seed 42 --output llm_neutral_narrative_v3
+uv run python scripts/run_llm_benchmark.py --style numeric --neutral-labels --runs 5 --seed 42 --output llm_neutral_numeric_v3
+uv run python scripts/run_llm_benchmark.py --style narrative --neutral-labels --runs 5 --seed 42 --output llm_neutral_narrative_v3
 ```
 
 ### A5: Feature Dropout
@@ -98,10 +99,10 @@ uv run python run_llm_benchmark.py --style narrative --neutral-labels --runs 5 -
 Remove one feature at a time from prompts to measure each feature's contribution to decision quality.
 
 ```bash
-uv run python run_llm_benchmark.py --style numeric --drop-feature risk --runs 5 --seed 42 --output llm_drop_risk_v3
-uv run python run_llm_benchmark.py --style numeric --drop-feature patience --runs 5 --seed 42 --output llm_drop_patience_v3
-uv run python run_llm_benchmark.py --style numeric --drop-feature preferences --runs 5 --seed 42 --output llm_drop_preferences_v3
-uv run python run_llm_benchmark.py --style numeric --drop-feature production_skill --runs 5 --seed 42 --output llm_drop_production_v3
+uv run python scripts/run_llm_benchmark.py --style numeric --drop-feature risk --runs 5 --seed 42 --output llm_drop_risk_v3
+uv run python scripts/run_llm_benchmark.py --style numeric --drop-feature patience --runs 5 --seed 42 --output llm_drop_patience_v3
+uv run python scripts/run_llm_benchmark.py --style numeric --drop-feature preferences --runs 5 --seed 42 --output llm_drop_preferences_v3
+uv run python scripts/run_llm_benchmark.py --style numeric --drop-feature production_skill --runs 5 --seed 42 --output llm_drop_production_v3
 ```
 
 ## Archetypes

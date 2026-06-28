@@ -90,7 +90,7 @@ def run_experiment(
 
     # Generate charts
     try:
-        from charts import generate_all_charts
+        from scripts.charts import generate_all_charts
 
         generate_all_charts(all_results, output_path)
         print(f"Charts saved to {output_path}/")
