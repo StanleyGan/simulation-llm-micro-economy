@@ -261,7 +261,10 @@ def _print_summary(results: list[dict]):
         r_mean = sum(ranks) / len(ranks)
         v_mean = sum(vols) / len(vols)
 
-        print(f"{archetype:<22} ${w_mean:>7.0f} ± ${w_std:>6.0f}   {g_mean:>+8.1%}     {r_mean:>5.1f}       {v_mean:.4f}")
+        print(
+            f"{archetype:<22} ${w_mean:>7.0f} ± ${w_std:>6.0f}   "
+            f"{g_mean:>+8.1%}     {r_mean:>5.1f}       {v_mean:.4f}"
+        )
 
     print(f"{'='*70}")
 
@@ -331,8 +334,8 @@ def _plot_charts(results: list[dict], output_path: Path):
         for i, arch in enumerate(archetypes)
     ]
     colors = [ARCH_COLORS.get(a, '#888') for a in archetypes]
-    bars = ax.bar([a.replace('_', ' ') for a in archetypes], means, yerr=stds,
-                  color=colors, alpha=0.7, edgecolor=colors, capsize=5)
+    ax.bar([a.replace('_', ' ') for a in archetypes], means, yerr=stds,
+           color=colors, alpha=0.7, edgecolor=colors, capsize=5)
     ax.set_ylabel("Mean Final Wealth ($)")
     ax.set_title("Final Wealth by Archetype")
     ax.grid(True, axis='y', alpha=0.3)
@@ -345,8 +348,8 @@ def _plot_charts(results: list[dict], output_path: Path):
     # --- Chart 3: Mean rank bar chart ---
     fig, ax = plt.subplots(figsize=(10, 5))
     mean_ranks = [sum(a["rank_in_run"] for a in by_archetype[arch]) / len(by_archetype[arch]) for arch in archetypes]
-    bars = ax.bar([a.replace('_', ' ') for a in archetypes], mean_ranks,
-                  color=colors, alpha=0.7, edgecolor=colors)
+    ax.bar([a.replace('_', ' ') for a in archetypes], mean_ranks,
+           color=colors, alpha=0.7, edgecolor=colors)
     ax.set_ylabel("Mean Rank (1 = best)")
     ax.set_title("Average Rank by Archetype")
     ax.invert_yaxis()

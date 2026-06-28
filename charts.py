@@ -100,7 +100,7 @@ def plot_trade_volume(results: list[dict], output_path: Path):
 
     fig, ax = plt.subplots(figsize=(10, 5))
     means = [sum(r["trade_volume"]["total_trades"] for r in groups[c]) / len(groups[c]) for c in configs]
-    bars = ax.bar(configs, means, color=COLORS[:len(configs)], alpha=0.8, edgecolor="#2e3345")
+    ax.bar(configs, means, color=COLORS[:len(configs)], alpha=0.8, edgecolor="#2e3345")
 
     # Add error bars
     stds = []

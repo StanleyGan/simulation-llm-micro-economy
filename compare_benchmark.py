@@ -78,10 +78,10 @@ def compare_results(dgp_results: list[dict], llm_results: list[dict]) -> dict:
             for r in llm_by_run[run_id]:
                 llm_by_arch[r["archetype"]].append(r)
             for arch in set(dgp_by_arch) & set(llm_by_arch):
-                for i, (d, l) in enumerate(zip(dgp_by_arch[arch], llm_by_arch[arch])):
+                for i, (d, ll) in enumerate(zip(dgp_by_arch[arch], llm_by_arch[arch])):
                     key = (run_id, f"{arch}_{i}")
                     dgp_by_key[key] = d
-                    llm_by_key[key] = l
+                    llm_by_key[key] = ll
 
         common_keys = set(dgp_by_key.keys()) & set(llm_by_key.keys())
         if not common_keys:
@@ -136,7 +136,10 @@ def compare_results(dgp_results: list[dict], llm_results: list[dict]) -> dict:
         llm_wealth = sum(a["final_wealth"] for a in llm_agents) / len(llm_agents)
         wealth_diff = ((llm_wealth - dgp_wealth) / dgp_wealth * 100) if dgp_wealth else 0
 
-        print(f"{arch:<22} {dgp_rank:>8.1f}     {llm_rank:>8.1f}     ${dgp_wealth:>9.0f}     ${llm_wealth:>9.0f}   {wealth_diff:>+6.1f}%")
+        print(
+            f"{arch:<22} {dgp_rank:>8.1f}     {llm_rank:>8.1f}"
+            f"     ${dgp_wealth:>9.0f}     ${llm_wealth:>9.0f}   {wealth_diff:>+6.1f}%"
+        )
         arch_comparison.append({
             "archetype": arch,
             "dgp_rank": dgp_rank, "llm_rank": llm_rank,
@@ -263,10 +266,10 @@ def plot_comparison(dgp_results: list[dict], llm_results: list[dict],
         dgp_by_key = {}
         llm_by_key = {}
         for grp in set(dgp_by_run_arch) & set(llm_by_run_arch):
-            for i, (d, l) in enumerate(zip(dgp_by_run_arch[grp], llm_by_run_arch[grp])):
+            for i, (d, ll) in enumerate(zip(dgp_by_run_arch[grp], llm_by_run_arch[grp])):
                 key = (grp[0], f"{grp[1]}_{i}")
                 dgp_by_key[key] = d
-                llm_by_key[key] = l
+                llm_by_key[key] = ll
         common = set(dgp_by_key.keys()) & set(llm_by_key.keys())
 
     n_agents = comparison.get("agents_per_run", 60)

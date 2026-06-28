@@ -95,7 +95,10 @@ def per_archetype_stats(all_data):
 
     for cond, records in all_data.items():
         print(f"\n--- {cond} ---")
-        header = f"{'Archetype':<25} {'N':>5} {'Mean Wealth':>12} {'Std Wealth':>12} {'Mean Rank':>10} {'Mean Growth':>12}"
+        header = (
+            f"{'Archetype':<25} {'N':>5} {'Mean Wealth':>12} "
+            f"{'Std Wealth':>12} {'Mean Rank':>10} {'Mean Growth':>12}"
+        )
         print(header)
         print("-" * len(header))
 

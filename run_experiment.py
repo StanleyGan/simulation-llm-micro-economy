@@ -65,7 +65,10 @@ def run_experiment(
         efficiencies = [r["market_efficiency"] for r in config_results]
 
         print(f"\n  Summary for {config_name}:")
-        print(f"    Gini:       mean={_mean(ginis):.4f}  std={_std(ginis):.4f}  range=[{min(ginis):.4f}, {max(ginis):.4f}]")
+        print(
+            f"    Gini:       mean={_mean(ginis):.4f}  std={_std(ginis):.4f}"
+            f"  range=[{min(ginis):.4f}, {max(ginis):.4f}]"
+        )
         print(f"    Volatility: mean={_mean(vols):.4f}  std={_std(vols):.4f}")
         print(f"    Trades:     mean={_mean(trades):.1f}  std={_std(trades):.1f}")
         print(f"    Efficiency: mean={_mean(efficiencies):.4f}  std={_std(efficiencies):.4f}")
