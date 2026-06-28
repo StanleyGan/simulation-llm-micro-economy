@@ -6,16 +6,17 @@ Outputs features, decisions, and wealth trajectories to CSV and JSON.
 """
 
 from __future__ import annotations
+
 import argparse
 import csv
 import json
 import random
 from pathlib import Path
 
-from models import Good, MarketState, GOOD_LIST
-from dgp import DGPAgent, DGPFeatures, dgp_decision
-from dgp_personas import ALL_ARCHETYPES, sample_population
-from simulation import match_orders, execute_trades
+from micro_economy.dgp import DGPAgent, DGPFeatures, dgp_decision
+from micro_economy.dgp_personas import ALL_ARCHETYPES, sample_population
+from micro_economy.models import Good, MarketState
+from micro_economy.simulation import match_orders
 
 
 def run_dgp_simulation(
@@ -269,8 +270,9 @@ def _plot_charts(results: list[dict], output_path: Path):
     """Generate matplotlib charts and save as PNG."""
     import matplotlib
     matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
     from collections import defaultdict
+
+    import matplotlib.pyplot as plt
 
     ARCH_COLORS = {
         'cautious_farmer': '#22c55e',

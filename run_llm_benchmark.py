@@ -6,23 +6,23 @@ Outputs results in the same format for comparison against ground truth.
 """
 
 from __future__ import annotations
+
 import argparse
 import csv
 import json
-import os
 import random
 from pathlib import Path
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from models import Good, Agent, Inventory, MarketState, MarketOrder, GOOD_LIST
-from dgp import DGPFeatures
-from dgp_personas import ALL_ARCHETYPES, sample_population
-from simulation import match_orders, execute_trades
-from llm_agent import get_agent_decision
-from prompt_translator import features_to_persona
-
+from micro_economy.dgp import DGPFeatures
+from micro_economy.dgp_personas import ALL_ARCHETYPES, sample_population
+from micro_economy.llm_agent import get_agent_decision
+from micro_economy.models import GOOD_LIST, Agent, Good, Inventory, MarketOrder, MarketState
+from micro_economy.prompt_translator import features_to_persona
+from micro_economy.simulation import execute_trades, match_orders
 
 _NEUTRAL_GROUP_LABELS = ["A", "B", "C", "D", "E", "F"]
 

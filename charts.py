@@ -1,14 +1,14 @@
 """Generate comparison charts from experiment results."""
 
 from __future__ import annotations
-from pathlib import Path
+
 from collections import defaultdict
+from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-
 
 # Color palette
 COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#22c55e", "#3b82f6"]
@@ -61,7 +61,7 @@ def plot_gini_comparison(results: list[dict], output_path: Path):
     fig.tight_layout()
     fig.savefig(output_path / "gini_comparison.png", dpi=150)
     plt.close(fig)
-    print(f"  Saved gini_comparison.png")
+    print("  Saved gini_comparison.png")
 
 
 def plot_volatility_comparison(results: list[dict], output_path: Path):
@@ -89,7 +89,7 @@ def plot_volatility_comparison(results: list[dict], output_path: Path):
     fig.tight_layout()
     fig.savefig(output_path / "volatility_comparison.png", dpi=150)
     plt.close(fig)
-    print(f"  Saved volatility_comparison.png")
+    print("  Saved volatility_comparison.png")
 
 
 def plot_trade_volume(results: list[dict], output_path: Path):
@@ -118,7 +118,7 @@ def plot_trade_volume(results: list[dict], output_path: Path):
     fig.tight_layout()
     fig.savefig(output_path / "trade_volume.png", dpi=150)
     plt.close(fig)
-    print(f"  Saved trade_volume.png")
+    print("  Saved trade_volume.png")
 
 
 def plot_wealth_spread(results: list[dict], output_path: Path):
@@ -146,7 +146,7 @@ def plot_wealth_spread(results: list[dict], output_path: Path):
     fig.tight_layout()
     fig.savefig(output_path / "wealth_spread.png", dpi=150)
     plt.close(fig)
-    print(f"  Saved wealth_spread.png")
+    print("  Saved wealth_spread.png")
 
 
 def plot_efficiency_comparison(results: list[dict], output_path: Path):
@@ -174,7 +174,7 @@ def plot_efficiency_comparison(results: list[dict], output_path: Path):
     fig.tight_layout()
     fig.savefig(output_path / "market_efficiency.png", dpi=150)
     plt.close(fig)
-    print(f"  Saved market_efficiency.png")
+    print("  Saved market_efficiency.png")
 
 
 def plot_summary_dashboard(results: list[dict], output_path: Path):
@@ -219,7 +219,7 @@ def plot_summary_dashboard(results: list[dict], output_path: Path):
     fig.tight_layout()
     fig.savefig(output_path / "dashboard.png", dpi=150)
     plt.close(fig)
-    print(f"  Saved dashboard.png")
+    print("  Saved dashboard.png")
 
 
 def generate_all_charts(results: list[dict], output_path: Path):

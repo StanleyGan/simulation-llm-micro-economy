@@ -6,29 +6,30 @@ This produces ground-truth outcomes for validating LLM persona simulations.
 """
 
 from __future__ import annotations
+
 import itertools
 import math
 import random
 from dataclasses import dataclass, field
-from typing import Optional
 
-from models import Good, MarketOrder, MarketState, GOOD_LIST
-
+from micro_economy.models import GOOD_LIST, Good, MarketOrder, MarketState
 
 # ---------------------------------------------------------------------------
 # DGP Agent definition
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class DGPFeatures:
     """Numeric features that fully define an agent's behavior."""
+
     name: str
-    archetype: str                    # e.g. "aggressive", "cautious"
-    risk_appetite: float              # r ∈ [0, 1], higher = more aggressive
-    budget: float                     # starting money
-    preferences: dict[Good, float]    # weights over goods, sum to 1
-    patience: float                   # δ ∈ [0, 1], higher = more patient
-    production_skill: Good            # which good they produce
+    archetype: str  # e.g. "aggressive", "cautious"
+    risk_appetite: float  # r ∈ [0, 1], higher = more aggressive
+    budget: float  # starting money
+    preferences: dict[Good, float]  # weights over goods, sum to 1
+    patience: float  # δ ∈ [0, 1], higher = more patient
+    production_skill: Good  # which good they produce
 
     def to_dict(self) -> dict:
         return {
@@ -45,6 +46,7 @@ class DGPFeatures:
 @dataclass
 class DGPAgent:
     """An agent that makes decisions via utility maximization."""
+
     features: DGPFeatures
     budget: float = 0.0
     inventory: dict[Good, int] = field(default_factory=lambda: {g: 0 for g in Good})
@@ -75,6 +77,7 @@ class DGPAgent:
 # CRRA Utility
 # ---------------------------------------------------------------------------
 
+
 def crra_utility(quantity: float, risk: float) -> float:
     """CRRA utility for a single good.
 
@@ -86,11 +89,10 @@ def crra_utility(quantity: float, risk: float) -> float:
     if abs(risk - 1.0) < 1e-6:
         return math.log(quantity)
     exponent = 1.0 - risk
-    return (quantity ** exponent) / exponent
+    return (quantity**exponent) / exponent
 
 
-def total_utility(inventory: dict[Good, int], preferences: dict[Good, float],
-                  risk: float) -> float:
+def total_utility(inventory: dict[Good, int], preferences: dict[Good, float], risk: float) -> float:
     """Total utility across all goods: Σⱼ pⱼ · U(xⱼ)."""
     total = 0.0
     for good in Good:
@@ -156,8 +158,7 @@ def find_optimal_trade(
     for sell_good, buy_good in itertools.permutations(Good, 2):
         for sell_qty in range(1, min(agent.inventory.get(sell_good, 0), MAX_TRADE_PER_GOOD) + 1):
             sell_revenue = sell_qty * prices[sell_good]
-            max_buy = min(MAX_TRADE_PER_GOOD,
-                          int((effective_budget + sell_revenue) / max(prices[buy_good], 0.01)))
+            max_buy = min(MAX_TRADE_PER_GOOD, int((effective_budget + sell_revenue) / max(prices[buy_good], 0.01)))
             for buy_qty in range(1, max_buy + 1):
                 trade = {g: 0 for g in Good}
                 trade[sell_good] = -sell_qty
@@ -175,7 +176,7 @@ def _evaluate_trade(
     trade: dict[Good, int],
     prices: dict[Good, float],
     effective_budget: float,
-) -> Optional[float]:
+) -> float | None:
     """Evaluate a candidate trade. Returns utility if feasible, None if not.
 
     Includes cash utility so spending money has a real opportunity cost.
@@ -225,6 +226,7 @@ def _evaluate_trade(
 # Generate orders from optimal trade
 # ---------------------------------------------------------------------------
 
+
 def generate_orders(
     agent: DGPAgent,
     trade: dict[Good, int],
@@ -239,25 +241,29 @@ def generate_orders(
         if qty > 0:
             # Buying: max price scales with risk appetite
             max_price = prices[good] * (1.0 + r * 0.2)
-            orders.append(MarketOrder(
-                agent_name=agent.name,
-                action="buy",
-                good=good.value,
-                quantity=qty,
-                max_price=round(max_price, 2),
-                reasoning=f"DGP: utility-maximizing buy",
-            ))
+            orders.append(
+                MarketOrder(
+                    agent_name=agent.name,
+                    action="buy",
+                    good=good.value,
+                    quantity=qty,
+                    max_price=round(max_price, 2),
+                    reasoning="DGP: utility-maximizing buy",
+                )
+            )
         elif qty < 0:
             # Selling: min price scales inversely with risk appetite
             min_price = prices[good] * (1.0 - r * 0.2)
-            orders.append(MarketOrder(
-                agent_name=agent.name,
-                action="sell",
-                good=good.value,
-                quantity=abs(qty),
-                max_price=round(min_price, 2),
-                reasoning=f"DGP: utility-maximizing sell",
-            ))
+            orders.append(
+                MarketOrder(
+                    agent_name=agent.name,
+                    action="sell",
+                    good=good.value,
+                    quantity=abs(qty),
+                    max_price=round(min_price, 2),
+                    reasoning="DGP: utility-maximizing sell",
+                )
+            )
 
     return orders
 
@@ -265,6 +271,7 @@ def generate_orders(
 # ---------------------------------------------------------------------------
 # DGP decision function (drop-in replacement for LLM decisions)
 # ---------------------------------------------------------------------------
+
 
 def dgp_decision(agent: DGPAgent, market: MarketState, round_num: int) -> list[MarketOrder]:
     """Make a trading decision using the DGP utility maximization.
@@ -284,13 +291,15 @@ def dgp_decision(agent: DGPAgent, market: MarketState, round_num: int) -> list[M
     orders = generate_orders(agent, trade, market.prices)
 
     # Record decision
-    agent.decision_history.append({
-        "round": round_num,
-        "produced": produce_qty,
-        "production_good": production_good.value,
-        "trade": {g.value: v for g, v in trade.items()},
-        "orders": len(orders),
-    })
+    agent.decision_history.append(
+        {
+            "round": round_num,
+            "produced": produce_qty,
+            "production_good": production_good.value,
+            "trade": {g.value: v for g, v in trade.items()},
+            "orders": len(orders),
+        }
+    )
 
     return orders
 

@@ -1,23 +1,25 @@
 """FastAPI server with SSE streaming for the micro-economy simulation."""
 
 from __future__ import annotations
+
 import asyncio
 import json
 import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
+from run_dgp import create_dgp_agents
 from sse_starlette.sse import EventSourceResponse
 
-from simulation import run_simulation, run_simulation_sync, create_agents
-from experiments import EXPERIMENT_CONFIGS
-from metrics import compute_all_metrics
-from dgp_personas import ALL_ARCHETYPES, sample_population
-from run_dgp import create_dgp_agents, run_dgp_simulation
+from micro_economy.dgp_personas import ALL_ARCHETYPES, sample_population
+from micro_economy.experiments import EXPERIMENT_CONFIGS
+from micro_economy.metrics import compute_all_metrics
+from micro_economy.simulation import create_agents, run_simulation, run_simulation_sync
 
 app = FastAPI(title="Micro-Economy Simulator")
 
@@ -202,9 +204,9 @@ async def run_dgp_stream(
             agents = create_dgp_agents(group_features)
 
             # Run simulation and stream each round
-            from models import Good, MarketState, GOOD_LIST, MarketOrder
-            from dgp import dgp_decision
-            from simulation import match_orders
+            from micro_economy.dgp import dgp_decision
+            from micro_economy.models import Good, MarketState
+            from micro_economy.simulation import match_orders
 
             market = MarketState()
             agents_map = {a.name: a for a in agents}

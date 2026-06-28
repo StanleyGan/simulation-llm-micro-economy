@@ -1,13 +1,13 @@
 """LLM-powered agent decision-making using OpenAI API."""
 
 from __future__ import annotations
-import json
-import os
-import math
-import random
-from typing import Optional
 
-from models import Agent, Good, MarketOrder, MarketState, GOOD_LIST
+import json
+import math
+import os
+import random
+
+from micro_economy.models import Agent, MarketOrder, MarketState
 
 
 def _poisson_sample(lam: float) -> int:
@@ -26,6 +26,7 @@ def _poisson_sample(lam: float) -> int:
 # Mock mode: when no API key is set, agents use simple heuristic strategies
 # ---------------------------------------------------------------------------
 
+
 def _mock_decision(agent: Agent, market: MarketState, round_num: int) -> list[MarketOrder]:
     """Simple heuristic trading — used when no API key is available."""
     orders: list[MarketOrder] = []
@@ -41,14 +42,16 @@ def _mock_decision(agent: Agent, market: MarketState, round_num: int) -> list[Ma
     if held > 3:
         sell_qty = random.randint(1, held - 2)
         min_price = market.prices[production_good] * (0.8 + persona.risk_tolerance * 0.3)
-        orders.append(MarketOrder(
-            agent_name=agent.name,
-            action="sell",
-            good=production_good.value,
-            quantity=sell_qty,
-            max_price=round(min_price, 2),
-            reasoning=f"Selling surplus {production_good.value}",
-        ))
+        orders.append(
+            MarketOrder(
+                agent_name=agent.name,
+                action="sell",
+                good=production_good.value,
+                quantity=sell_qty,
+                max_price=round(min_price, 2),
+                reasoning=f"Selling surplus {production_good.value}",
+            )
+        )
 
     # Buy preferred goods if affordable
     for good in persona.preferred_goods:
@@ -58,19 +61,23 @@ def _mock_decision(agent: Agent, market: MarketState, round_num: int) -> list[Ma
         if agent.budget > price * 2:
             buy_qty = random.randint(1, min(3, int(agent.budget / price)))
             max_pay = price * (1.0 + persona.risk_tolerance * 0.2)
-            orders.append(MarketOrder(
-                agent_name=agent.name,
-                action="buy",
-                good=good.value,
-                quantity=buy_qty,
-                max_price=round(max_pay, 2),
-                reasoning=f"Buying needed {good.value}",
-            ))
+            orders.append(
+                MarketOrder(
+                    agent_name=agent.name,
+                    action="buy",
+                    good=good.value,
+                    quantity=buy_qty,
+                    max_price=round(max_pay, 2),
+                    reasoning=f"Buying needed {good.value}",
+                )
+            )
             break  # one buy per round in mock mode
 
-    thought = (f"[Round {round_num}] Produced {produce_qty} {production_good.value}. "
-               f"Budget: ${agent.budget:.2f}. "
-               f"Strategy: {'aggressive' if persona.risk_tolerance > 0.5 else 'conservative'}.")
+    thought = (
+        f"[Round {round_num}] Produced {produce_qty} {production_good.value}. "
+        f"Budget: ${agent.budget:.2f}. "
+        f"Strategy: {'aggressive' if persona.risk_tolerance > 0.5 else 'conservative'}."
+    )
     agent.thoughts.append(thought)
     return orders
 
@@ -81,10 +88,12 @@ def _mock_decision(agent: Agent, market: MarketState, round_num: int) -> list[Ma
 
 _OPENAI_CLIENT = None
 
+
 def _get_client():
     global _OPENAI_CLIENT
     if _OPENAI_CLIENT is None:
         from openai import OpenAI
+
         _OPENAI_CLIENT = OpenAI()
     return _OPENAI_CLIENT
 
@@ -130,10 +139,12 @@ def _llm_decision(agent: Agent, market: MarketState, round_num: int) -> list[Mar
 
     # Build user prompt with current state
     recent_trades = market.trade_log[-10:] if market.trade_log else []
-    trade_summary = "\n".join(
-        f"  {t.buyer} bought {t.quantity} {t.good.value} from {t.seller} @ ${t.price:.2f}"
-        for t in recent_trades
-    ) or "  No recent trades."
+    trade_summary = (
+        "\n".join(
+            f"  {t.buyer} bought {t.quantity} {t.good.value} from {t.seller} @ ${t.price:.2f}" for t in recent_trades
+        )
+        or "  No recent trades."
+    )
 
     user_msg = f"""Round {round_num}. You just produced {produce_qty} {production_good.value}.
 
@@ -182,14 +193,16 @@ What do you want to do this round?"""
 
         orders = []
         for o in data.get("orders", []):
-            orders.append(MarketOrder(
-                agent_name=agent.name,
-                action=o["action"],
-                good=o["good"],
-                quantity=int(o["quantity"]),
-                max_price=float(o.get("max_price", 0)),
-                reasoning=thinking,
-            ))
+            orders.append(
+                MarketOrder(
+                    agent_name=agent.name,
+                    action=o["action"],
+                    good=o["good"],
+                    quantity=int(o["quantity"]),
+                    max_price=float(o.get("max_price", 0)),
+                    reasoning=thinking,
+                )
+            )
         return orders
 
     except Exception as e:
@@ -200,6 +213,7 @@ What do you want to do this round?"""
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def get_agent_decision(agent: Agent, market: MarketState, round_num: int) -> list[MarketOrder]:
     """Get trading decisions from an agent. Uses OpenAI if API key is set, else mock."""

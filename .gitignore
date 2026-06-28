@@ -7,3 +7,12 @@ venv/
 uv.lock
 .DS_Store
 CLAUDE.md
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/

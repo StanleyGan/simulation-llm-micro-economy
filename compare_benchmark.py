@@ -8,11 +8,12 @@ Uses Spearman rank correlation (appropriate for n=60).
 """
 
 from __future__ import annotations
+
+import argparse
 import json
 import math
-import argparse
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 
 def load_results(path: Path) -> list[dict]:

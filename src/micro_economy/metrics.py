@@ -1,10 +1,11 @@
 """Economic metrics for analyzing simulation outcomes."""
 
 from __future__ import annotations
+
 import math
 from typing import Any
 
-from models import Agent, Good, MarketState, Trade
+from micro_economy.models import Agent, Good, MarketState, Trade
 
 
 def gini_coefficient(values: list[float]) -> float:

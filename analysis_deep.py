@@ -46,7 +46,6 @@ def _t_cdf(t, df):
     return 1 - 0.5 * _betainc(df / 2, 0.5, x)
 
 def _betainc(a, b, x, steps=200):
-    from functools import reduce
     # numerical integration via Simpson's rule
     def f(u):
         if u <= 0 or u >= 1:

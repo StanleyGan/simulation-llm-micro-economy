@@ -1,6 +1,7 @@
 """Batch experiment runner — runs multiple persona configs x N runs, collects metrics."""
 
 from __future__ import annotations
+
 import argparse
 import csv
 import json
@@ -10,11 +11,12 @@ import time
 from pathlib import Path
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from experiments import EXPERIMENT_CONFIGS
-from simulation import run_simulation_sync
-from metrics import compute_all_metrics
+from micro_economy.experiments import EXPERIMENT_CONFIGS
+from micro_economy.metrics import compute_all_metrics
+from micro_economy.simulation import run_simulation_sync
 
 
 def run_single(config_name: str, personas, num_rounds: int, run_id: int) -> dict:

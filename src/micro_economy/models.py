@@ -1,13 +1,13 @@
 """Data models for the micro-economy simulation."""
 
 from __future__ import annotations
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Optional
+
 import random
+from dataclasses import dataclass, field
+from enum import StrEnum
 
 
-class Good(str, Enum):
+class Good(StrEnum):
     FOOD = "food"
     TOOLS = "tools"
     LUXURY = "luxury"
@@ -78,7 +78,7 @@ class MarketOrder:
     action: str  # "buy" or "sell"
     good: str
     quantity: int
-    max_price: Optional[float] = None  # max willing to pay (buy) or min accept (sell)
+    max_price: float | None = None  # max willing to pay (buy) or min accept (sell)
     reasoning: str = ""
 
 
@@ -94,12 +94,14 @@ class Trade:
 
 @dataclass
 class MarketState:
-    prices: dict[Good, float] = field(default_factory=lambda: {
-        Good.FOOD: 10.0,
-        Good.TOOLS: 25.0,
-        Good.LUXURY: 50.0,
-        Good.MEDICINE: 30.0,
-    })
+    prices: dict[Good, float] = field(
+        default_factory=lambda: {
+            Good.FOOD: 10.0,
+            Good.TOOLS: 25.0,
+            Good.LUXURY: 50.0,
+            Good.MEDICINE: 30.0,
+        }
+    )
     supply: dict[Good, int] = field(default_factory=lambda: {g: 100 for g in Good})
     demand: dict[Good, int] = field(default_factory=lambda: {g: 0 for g in Good})
     price_history: list[dict[str, float]] = field(default_factory=list)
@@ -133,7 +135,7 @@ DEFAULT_PERSONAS = [
     AgentPersona(
         name="Alice",
         personality="A cautious farmer who prioritizes food security and steady income. "
-                    "Dislikes risk and prefers small, safe trades. Tends to hoard food.",
+        "Dislikes risk and prefers small, safe trades. Tends to hoard food.",
         preferred_goods=[Good.FOOD, Good.MEDICINE],
         production_skill=Good.FOOD,
         risk_tolerance=0.2,
@@ -141,7 +143,7 @@ DEFAULT_PERSONAS = [
     AgentPersona(
         name="Bob",
         personality="An ambitious merchant who loves luxury goods and big deals. "
-                    "Willing to take risks for high returns. Always looking for arbitrage.",
+        "Willing to take risks for high returns. Always looking for arbitrage.",
         preferred_goods=[Good.LUXURY, Good.TOOLS],
         production_skill=Good.TOOLS,
         risk_tolerance=0.8,
@@ -149,7 +151,7 @@ DEFAULT_PERSONAS = [
     AgentPersona(
         name="Clara",
         personality="A pragmatic doctor who values medicine above all. "
-                    "Trades strategically but fairly. Believes in building long-term relationships.",
+        "Trades strategically but fairly. Believes in building long-term relationships.",
         preferred_goods=[Good.MEDICINE, Good.FOOD],
         production_skill=Good.MEDICINE,
         risk_tolerance=0.5,
@@ -157,7 +159,7 @@ DEFAULT_PERSONAS = [
     AgentPersona(
         name="Drake",
         personality="A shrewd speculator who tries to corner markets and manipulate prices. "
-                    "Buys low, sells high. Has no loyalty to other traders.",
+        "Buys low, sells high. Has no loyalty to other traders.",
         preferred_goods=[Good.LUXURY, Good.MEDICINE],
         production_skill=Good.LUXURY,
         risk_tolerance=0.9,
@@ -165,7 +167,7 @@ DEFAULT_PERSONAS = [
     AgentPersona(
         name="Eve",
         personality="A community-minded toolmaker who believes in fair trade. "
-                    "Tries to keep prices stable and help others. Will sacrifice profit for fairness.",
+        "Tries to keep prices stable and help others. Will sacrifice profit for fairness.",
         preferred_goods=[Good.TOOLS, Good.FOOD],
         production_skill=Good.TOOLS,
         risk_tolerance=0.3,
@@ -173,7 +175,7 @@ DEFAULT_PERSONAS = [
     AgentPersona(
         name="Frank",
         personality="A survivalist who stockpiles essential goods (food, medicine). "
-                    "Distrusts the market and only trades when necessary. Very conservative.",
+        "Distrusts the market and only trades when necessary. Very conservative.",
         preferred_goods=[Good.FOOD, Good.MEDICINE],
         production_skill=Good.FOOD,
         risk_tolerance=0.1,

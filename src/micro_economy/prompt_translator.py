@@ -9,13 +9,13 @@ Both use the same underlying DGPFeatures so comparisons are apples-to-apples.
 
 from __future__ import annotations
 
-from models import AgentPersona, Good
-from dgp import DGPFeatures
-
+from micro_economy.dgp import DGPFeatures
+from micro_economy.models import AgentPersona, Good
 
 # ---------------------------------------------------------------------------
 # Numeric prompt style
 # ---------------------------------------------------------------------------
+
 
 def _to_range(score: float, spread: float = 1.0) -> str:
     """Convert a score to a range string like '7-9 out of 10'.
@@ -55,15 +55,17 @@ def features_to_numeric_prompt(
         )
 
     if drop_feature != "patience":
-        lines.append(
-            f"- Patience: {_to_range(patience_score)} "
-            f"({'very patient, prefers long-term gains' if patience_score > 7 else 'moderate patience' if patience_score > 4 else 'impatient, wants quick profits'})"
-        )
+        if patience_score > 7:
+            patience_label = "very patient, prefers long-term gains"
+        elif patience_score > 4:
+            patience_label = "moderate patience"
+        else:
+            patience_label = "impatient, wants quick profits"
+        lines.append(f"- Patience: {_to_range(patience_score)} ({patience_label})")
 
     if drop_feature != "preferences":
         pref_lines = ", ".join(
-            f"{g.value} {round(w * 100)}%"
-            for g, w in sorted(f.preferences.items(), key=lambda x: -x[1])
+            f"{g.value} {round(w * 100)}%" for g, w in sorted(f.preferences.items(), key=lambda x: -x[1])
         )
         lines.append(f"- Good preferences: {pref_lines}")
 
@@ -80,31 +82,52 @@ def features_to_numeric_prompt(
 # ---------------------------------------------------------------------------
 
 _RISK_DESCRIPTIONS = [
-    (0.2, "extremely cautious. You hate taking risks and prefer the safety of what you know. "
-          "You'd rather miss an opportunity than lose what you have."),
-    (0.4, "fairly conservative. You take calculated risks only when the odds are clearly in your favor. "
-          "Stability matters more than big gains."),
-    (0.6, "moderately risk-tolerant. You're willing to take reasonable risks when you see opportunity, "
-          "but you don't gamble recklessly."),
-    (0.8, "quite aggressive. You actively seek out profitable opportunities and don't mind uncertainty. "
-          "You believe higher risk means higher reward."),
-    (1.0, "very aggressive and bold. You thrive on high-stakes trades and love the thrill of big moves. "
-          "You'll take large positions to maximize your gains."),
+    (
+        0.2,
+        "extremely cautious. You hate taking risks and prefer the safety of what you know. "
+        "You'd rather miss an opportunity than lose what you have.",
+    ),
+    (
+        0.4,
+        "fairly conservative. You take calculated risks only when the odds are clearly in your favor. "
+        "Stability matters more than big gains.",
+    ),
+    (
+        0.6,
+        "moderately risk-tolerant. You're willing to take reasonable risks when you see opportunity, "
+        "but you don't gamble recklessly.",
+    ),
+    (
+        0.8,
+        "quite aggressive. You actively seek out profitable opportunities and don't mind uncertainty. "
+        "You believe higher risk means higher reward.",
+    ),
+    (
+        1.0,
+        "very aggressive and bold. You thrive on high-stakes trades and love the thrill of big moves. "
+        "You'll take large positions to maximize your gains.",
+    ),
 ]
 
 _PATIENCE_DESCRIPTIONS = [
-    (0.2, "You are very impatient — you want profits now, not later. "
-          "Quick trades and immediate returns are your priority."),
-    (0.4, "You lean toward short-term thinking. "
-          "You'd rather lock in a decent gain today than wait for a better one tomorrow."),
-    (0.6, "You have moderate patience. "
-          "You can wait for the right opportunity but won't sit idle for too long."),
-    (0.8, "You are quite patient. "
-          "You're happy to hold your position and wait for the market to come to you."),
-    (1.0, "You are extremely patient and think long-term. "
-          "You believe in building wealth slowly and steadily, never rushing into trades."),
+    (
+        0.2,
+        "You are very impatient — you want profits now, not later. "
+        "Quick trades and immediate returns are your priority.",
+    ),
+    (
+        0.4,
+        "You lean toward short-term thinking. "
+        "You'd rather lock in a decent gain today than wait for a better one tomorrow.",
+    ),
+    (0.6, "You have moderate patience. You can wait for the right opportunity but won't sit idle for too long."),
+    (0.8, "You are quite patient. You're happy to hold your position and wait for the market to come to you."),
+    (
+        1.0,
+        "You are extremely patient and think long-term. "
+        "You believe in building wealth slowly and steadily, never rushing into trades.",
+    ),
 ]
-
 
 
 def _describe(value: float, descriptions: list[tuple[float, str]]) -> str:
@@ -172,6 +195,7 @@ def features_to_narrative_prompt(
 # Strategy guide (CRRA optimization rules in natural language)
 # ---------------------------------------------------------------------------
 
+
 def build_strategy_guide(f: DGPFeatures) -> str:
     """Build agent-specific strategy rules derived from CRRA utility.
 
@@ -213,8 +237,7 @@ def build_strategy_guide(f: DGPFeatures) -> str:
         )
     else:
         cash_desc = (
-            f"Cash has low value to you (weight: {cash_weight:.1f}). "
-            "Prioritize converting cash into goods you value."
+            f"Cash has low value to you (weight: {cash_weight:.1f}). Prioritize converting cash into goods you value."
         )
 
     # Diversity bonus
@@ -241,6 +264,7 @@ def build_strategy_guide(f: DGPFeatures) -> str:
 # ---------------------------------------------------------------------------
 # Convert to AgentPersona (used by existing LLM simulation)
 # ---------------------------------------------------------------------------
+
 
 def features_to_persona(
     f: DGPFeatures,

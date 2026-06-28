@@ -1,15 +1,24 @@
 """Core simulation engine — orchestrates rounds of trading."""
 
 from __future__ import annotations
+
 import asyncio
 import random
-from typing import AsyncGenerator, Any
+from collections.abc import AsyncGenerator
+from typing import Any
 
-from models import (
-    Agent, AgentPersona, Good, Inventory, MarketOrder, MarketState, Trade,
-    DEFAULT_PERSONAS, GOOD_LIST,
+from micro_economy.llm_agent import get_agent_decision
+from micro_economy.models import (
+    DEFAULT_PERSONAS,
+    GOOD_LIST,
+    Agent,
+    AgentPersona,
+    Good,
+    Inventory,
+    MarketOrder,
+    MarketState,
+    Trade,
 )
-from llm_agent import get_agent_decision
 
 
 def create_agents(personas: list[AgentPersona] | None = None, starting_budget: float = 200.0) -> list[Agent]:
@@ -56,14 +65,16 @@ def match_orders(buys: list[MarketOrder], sells: list[MarketOrder], market: Mark
             if qty <= 0:
                 continue
 
-            trades.append(Trade(
-                buyer=buy.agent_name,
-                seller=sell.agent_name,
-                good=Good(buy.good),
-                quantity=qty,
-                price=round(price, 2),
-                round_num=round_num,
-            ))
+            trades.append(
+                Trade(
+                    buyer=buy.agent_name,
+                    seller=sell.agent_name,
+                    good=Good(buy.good),
+                    quantity=qty,
+                    price=round(price, 2),
+                    round_num=round_num,
+                )
+            )
             buy.quantity -= qty
             sell.quantity -= qty
             if buy.quantity <= 0:
@@ -84,8 +95,9 @@ def execute_trades(trades: list[Trade], agents_map: dict[str, Agent]):
             seller.budget += total_cost
             seller.inventory.remove(t.good, t.quantity)
             buyer.inventory.add(t.good, t.quantity)
-            buyer.trade_history.append({"round": t.round_num, "action": "bought", "good": t.good.value, "qty": t.quantity, "price": t.price})
-            seller.trade_history.append({"round": t.round_num, "action": "sold", "good": t.good.value, "qty": t.quantity, "price": t.price})
+            entry = {"round": t.round_num, "good": t.good.value, "qty": t.quantity, "price": t.price}
+            buyer.trade_history.append({**entry, "action": "bought"})
+            seller.trade_history.append({**entry, "action": "sold"})
 
 
 async def run_simulation(
@@ -111,10 +123,12 @@ async def run_simulation(
             orders = get_agent_decision(agent, market, round_num)
             all_orders.extend(orders)
             if agent.thoughts:
-                round_thoughts.append({
-                    "agent": agent.name,
-                    "thought": agent.thoughts[-1] if agent.thoughts else "",
-                })
+                round_thoughts.append(
+                    {
+                        "agent": agent.name,
+                        "thought": agent.thoughts[-1] if agent.thoughts else "",
+                    }
+                )
 
         # Update demand based on buy orders
         for order in all_orders:
@@ -138,8 +152,7 @@ async def run_simulation(
             "type": "round",
             "round": round_num,
             "trades": [
-                {"buyer": t.buyer, "seller": t.seller, "good": t.good.value,
-                 "quantity": t.quantity, "price": t.price}
+                {"buyer": t.buyer, "seller": t.seller, "good": t.good.value, "quantity": t.quantity, "price": t.price}
                 for t in trades
             ],
             "thoughts": round_thoughts,
@@ -147,8 +160,13 @@ async def run_simulation(
             "price_history": market.price_history,
             "agents": [a.to_state_dict(market.prices) for a in agents],
             "orders": [
-                {"agent": o.agent_name, "action": o.action, "good": o.good,
-                 "quantity": o.quantity, "max_price": o.max_price}
+                {
+                    "agent": o.agent_name,
+                    "action": o.action,
+                    "good": o.good,
+                    "quantity": o.quantity,
+                    "max_price": o.max_price,
+                }
                 for o in all_orders
             ],
         }
