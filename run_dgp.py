@@ -171,7 +171,7 @@ def _volatility(values: list[float]) -> float:
     if mean == 0:
         return 0.0
     variance = sum((v - mean) ** 2 for v in values) / len(values)
-    return (variance ** 0.5) / mean
+    return (variance**0.5) / mean
 
 
 def _save_results(results: list[dict], output_path: Path):
@@ -186,23 +186,47 @@ def _save_results(results: list[dict], output_path: Path):
     csv_path = output_path / "dgp_ground_truth.csv"
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([
-            "run_id", "name", "archetype",
-            "risk_appetite", "budget_initial", "patience", "production_skill",
-            "pref_food", "pref_tools", "pref_luxury", "pref_medicine",
-            "final_wealth", "wealth_growth", "wealth_volatility",
-            "rank_in_run", "final_budget",
-        ])
+        writer.writerow(
+            [
+                "run_id",
+                "name",
+                "archetype",
+                "risk_appetite",
+                "budget_initial",
+                "patience",
+                "production_skill",
+                "pref_food",
+                "pref_tools",
+                "pref_luxury",
+                "pref_medicine",
+                "final_wealth",
+                "wealth_growth",
+                "wealth_volatility",
+                "rank_in_run",
+                "final_budget",
+            ]
+        )
         for r in results:
-            writer.writerow([
-                r["run_id"], r["name"], r["archetype"],
-                r["risk_appetite"], r["budget_initial"], r["patience"],
-                r["production_skill"],
-                r["preferences"]["food"], r["preferences"]["tools"],
-                r["preferences"]["luxury"], r["preferences"]["medicine"],
-                r["final_wealth"], r["wealth_growth"], r["wealth_volatility"],
-                r["rank_in_run"], r["final_budget"],
-            ])
+            writer.writerow(
+                [
+                    r["run_id"],
+                    r["name"],
+                    r["archetype"],
+                    r["risk_appetite"],
+                    r["budget_initial"],
+                    r["patience"],
+                    r["production_skill"],
+                    r["preferences"]["food"],
+                    r["preferences"]["tools"],
+                    r["preferences"]["luxury"],
+                    r["preferences"]["medicine"],
+                    r["final_wealth"],
+                    r["wealth_growth"],
+                    r["wealth_volatility"],
+                    r["rank_in_run"],
+                    r["final_budget"],
+                ]
+            )
     print(f"Summary CSV: {csv_path}")
 
     # Wealth trajectories CSV (for time-series analysis)
@@ -221,19 +245,37 @@ def _save_results(results: list[dict], output_path: Path):
     feat_path = output_path / "dgp_features.csv"
     with open(feat_path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([
-            "run_id", "name", "archetype",
-            "risk_appetite", "budget_initial", "patience", "production_skill",
-            "pref_food", "pref_tools", "pref_luxury", "pref_medicine",
-        ])
+        writer.writerow(
+            [
+                "run_id",
+                "name",
+                "archetype",
+                "risk_appetite",
+                "budget_initial",
+                "patience",
+                "production_skill",
+                "pref_food",
+                "pref_tools",
+                "pref_luxury",
+                "pref_medicine",
+            ]
+        )
         for r in results:
-            writer.writerow([
-                r["run_id"], r["name"], r["archetype"],
-                r["risk_appetite"], r["budget_initial"], r["patience"],
-                r["production_skill"],
-                r["preferences"]["food"], r["preferences"]["tools"],
-                r["preferences"]["luxury"], r["preferences"]["medicine"],
-            ])
+            writer.writerow(
+                [
+                    r["run_id"],
+                    r["name"],
+                    r["archetype"],
+                    r["risk_appetite"],
+                    r["budget_initial"],
+                    r["patience"],
+                    r["production_skill"],
+                    r["preferences"]["food"],
+                    r["preferences"]["tools"],
+                    r["preferences"]["luxury"],
+                    r["preferences"]["medicine"],
+                ]
+            )
     print(f"Features only: {feat_path}")
 
 
@@ -245,9 +287,9 @@ def _print_summary(results: list[dict]):
     for r in results:
         by_archetype[r["archetype"]].append(r)
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"{'Archetype':<22} {'Wealth (mean±std)':<22} {'Growth':<14} {'Rank (mean)':<12} {'Volatility'}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
     for archetype, agents in sorted(by_archetype.items()):
         wealths = [a["final_wealth"] for a in agents]
@@ -256,47 +298,47 @@ def _print_summary(results: list[dict]):
         vols = [a["wealth_volatility"] for a in agents]
 
         w_mean = sum(wealths) / len(wealths)
-        w_std = (sum((w - w_mean)**2 for w in wealths) / len(wealths)) ** 0.5
+        w_std = (sum((w - w_mean) ** 2 for w in wealths) / len(wealths)) ** 0.5
         g_mean = sum(growths) / len(growths)
         r_mean = sum(ranks) / len(ranks)
         v_mean = sum(vols) / len(vols)
 
         print(
-            f"{archetype:<22} ${w_mean:>7.0f} ± ${w_std:>6.0f}   "
-            f"{g_mean:>+8.1%}     {r_mean:>5.1f}       {v_mean:.4f}"
+            f"{archetype:<22} ${w_mean:>7.0f} ± ${w_std:>6.0f}   {g_mean:>+8.1%}     {r_mean:>5.1f}       {v_mean:.4f}"
         )
 
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
 
 def _plot_charts(results: list[dict], output_path: Path):
     """Generate matplotlib charts and save as PNG."""
     import matplotlib
+
     matplotlib.use("Agg")
     from collections import defaultdict
 
     import matplotlib.pyplot as plt
 
     ARCH_COLORS = {
-        'cautious_farmer': '#22c55e',
-        'aggressive_merchant': '#ef4444',
-        'pragmatic_doctor': '#3b82f6',
-        'shrewd_speculator': '#f59e0b',
-        'fair_toolmaker': '#8b5cf6',
-        'survivalist': '#06b6d4',
+        "cautious_farmer": "#22c55e",
+        "aggressive_merchant": "#ef4444",
+        "pragmatic_doctor": "#3b82f6",
+        "shrewd_speculator": "#f59e0b",
+        "fair_toolmaker": "#8b5cf6",
+        "survivalist": "#06b6d4",
     }
 
     dark = {
-        'figure.facecolor': '#0f1117',
-        'axes.facecolor': '#1a1d27',
-        'axes.edgecolor': '#2e3345',
-        'axes.labelcolor': '#9ca3af',
-        'text.color': '#e4e4e7',
-        'xtick.color': '#9ca3af',
-        'ytick.color': '#9ca3af',
-        'grid.color': '#2e3345',
-        'legend.facecolor': '#1a1d27',
-        'legend.edgecolor': '#2e3345',
+        "figure.facecolor": "#0f1117",
+        "axes.facecolor": "#1a1d27",
+        "axes.edgecolor": "#2e3345",
+        "axes.labelcolor": "#9ca3af",
+        "text.color": "#e4e4e7",
+        "xtick.color": "#9ca3af",
+        "ytick.color": "#9ca3af",
+        "grid.color": "#2e3345",
+        "legend.facecolor": "#1a1d27",
+        "legend.edgecolor": "#2e3345",
     }
     plt.rcParams.update(dark)
 
@@ -310,16 +352,16 @@ def _plot_charts(results: list[dict], output_path: Path):
     fig, ax = plt.subplots(figsize=(12, 6))
     legend_added = set()
     for arch in archetypes:
-        color = ARCH_COLORS.get(arch, '#888')
+        color = ARCH_COLORS.get(arch, "#888")
         for agent in by_archetype[arch]:
             traj = agent["wealth_trajectory"]
-            label = arch.replace('_', ' ') if arch not in legend_added else None
+            label = arch.replace("_", " ") if arch not in legend_added else None
             ax.plot(traj, color=color, alpha=0.3, linewidth=1, label=label)
             legend_added.add(arch)
     ax.set_xlabel("Round")
     ax.set_ylabel("Wealth ($)")
     ax.set_title("Wealth Trajectories by Archetype")
-    ax.legend(loc='upper right', fontsize=9)
+    ax.legend(loc="upper right", fontsize=9)
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
     fig.savefig(output_path / "trajectories.png", dpi=150)
@@ -330,16 +372,23 @@ def _plot_charts(results: list[dict], output_path: Path):
     fig, ax = plt.subplots(figsize=(10, 5))
     means = [sum(a["final_wealth"] for a in by_archetype[arch]) / len(by_archetype[arch]) for arch in archetypes]
     stds = [
-        (sum((a["final_wealth"] - means[i])**2 for a in by_archetype[arch]) / len(by_archetype[arch])) ** 0.5
+        (sum((a["final_wealth"] - means[i]) ** 2 for a in by_archetype[arch]) / len(by_archetype[arch])) ** 0.5
         for i, arch in enumerate(archetypes)
     ]
-    colors = [ARCH_COLORS.get(a, '#888') for a in archetypes]
-    ax.bar([a.replace('_', ' ') for a in archetypes], means, yerr=stds,
-           color=colors, alpha=0.7, edgecolor=colors, capsize=5)
+    colors = [ARCH_COLORS.get(a, "#888") for a in archetypes]
+    ax.bar(
+        [a.replace("_", " ") for a in archetypes],
+        means,
+        yerr=stds,
+        color=colors,
+        alpha=0.7,
+        edgecolor=colors,
+        capsize=5,
+    )
     ax.set_ylabel("Mean Final Wealth ($)")
     ax.set_title("Final Wealth by Archetype")
-    ax.grid(True, axis='y', alpha=0.3)
-    plt.xticks(rotation=20, ha='right')
+    ax.grid(True, axis="y", alpha=0.3)
+    plt.xticks(rotation=20, ha="right")
     fig.tight_layout()
     fig.savefig(output_path / "wealth_comparison.png", dpi=150)
     plt.close(fig)
@@ -348,13 +397,12 @@ def _plot_charts(results: list[dict], output_path: Path):
     # --- Chart 3: Mean rank bar chart ---
     fig, ax = plt.subplots(figsize=(10, 5))
     mean_ranks = [sum(a["rank_in_run"] for a in by_archetype[arch]) / len(by_archetype[arch]) for arch in archetypes]
-    ax.bar([a.replace('_', ' ') for a in archetypes], mean_ranks,
-           color=colors, alpha=0.7, edgecolor=colors)
+    ax.bar([a.replace("_", " ") for a in archetypes], mean_ranks, color=colors, alpha=0.7, edgecolor=colors)
     ax.set_ylabel("Mean Rank (1 = best)")
     ax.set_title("Average Rank by Archetype")
     ax.invert_yaxis()
-    ax.grid(True, axis='y', alpha=0.3)
-    plt.xticks(rotation=20, ha='right')
+    ax.grid(True, axis="y", alpha=0.3)
+    plt.xticks(rotation=20, ha="right")
     fig.tight_layout()
     fig.savefig(output_path / "rank_comparison.png", dpi=150)
     plt.close(fig)
@@ -363,15 +411,16 @@ def _plot_charts(results: list[dict], output_path: Path):
     # --- Chart 4: Risk vs Final Wealth scatter ---
     fig, ax = plt.subplots(figsize=(10, 6))
     for arch in archetypes:
-        color = ARCH_COLORS.get(arch, '#888')
+        color = ARCH_COLORS.get(arch, "#888")
         risks = [a["risk_appetite"] for a in by_archetype[arch]]
         wealths = [a["final_wealth"] for a in by_archetype[arch]]
-        ax.scatter(risks, wealths, c=color, label=arch.replace('_', ' '),
-                   alpha=0.7, s=50, edgecolors='white', linewidth=0.5)
+        ax.scatter(
+            risks, wealths, c=color, label=arch.replace("_", " "), alpha=0.7, s=50, edgecolors="white", linewidth=0.5
+        )
     ax.set_xlabel("Risk Appetite")
     ax.set_ylabel("Final Wealth ($)")
     ax.set_title("Risk Appetite vs Final Wealth")
-    ax.legend(loc='upper left', fontsize=9)
+    ax.legend(loc="upper left", fontsize=9)
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
     fig.savefig(output_path / "risk_vs_wealth.png", dpi=150)
@@ -381,8 +430,12 @@ def _plot_charts(results: list[dict], output_path: Path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run DGP ground-truth simulation")
-    parser.add_argument("--agents-per-archetype", type=int, default=10,
-                        help="Number of agents per archetype (default: 10, total = this × 6)")
+    parser.add_argument(
+        "--agents-per-archetype",
+        type=int,
+        default=10,
+        help="Number of agents per archetype (default: 10, total = this × 6)",
+    )
     parser.add_argument("--rounds", type=int, default=10, help="Rounds per simulation")
     parser.add_argument("--runs", type=int, default=10, help="Number of runs with different seeds")
     parser.add_argument("--output", type=str, default="dgp_results", help="Output directory")

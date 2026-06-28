@@ -1,4 +1,5 @@
 """Deep quantitative analysis across DGP and LLM conditions."""
+
 import json
 import math
 import os
@@ -18,12 +19,15 @@ CONDITIONS = {
     "Drop production": "llm_drop_production_v3/llm_numeric_results.json",
 }
 
+
 def _mean(xs):
     return sum(xs) / len(xs)
+
 
 def _std(xs):
     m = _mean(xs)
     return math.sqrt(sum((x - m) ** 2 for x in xs) / len(xs))
+
 
 def _pearsonr(xs, ys):
     n = len(xs)
@@ -41,9 +45,11 @@ def _pearsonr(xs, ys):
     p = 2 * (1 - _t_cdf(abs(t), df))
     return r, p
 
+
 def _t_cdf(t, df):
     x = df / (df + t * t)
     return 1 - 0.5 * _betainc(df / 2, 0.5, x)
+
 
 def _betainc(a, b, x, steps=200):
     # numerical integration via Simpson's rule
@@ -54,6 +60,7 @@ def _betainc(a, b, x, steps=200):
             return u ** (a - 1) * (1 - u) ** (b - 1)
         except (OverflowError, ValueError):
             return 0.0
+
     h = x / steps
     s = f(0) + f(x)
     for i in range(1, steps):
@@ -96,8 +103,7 @@ def per_archetype_stats(all_data):
     for cond, records in all_data.items():
         print(f"\n--- {cond} ---")
         header = (
-            f"{'Archetype':<25} {'N':>5} {'Mean Wealth':>12} "
-            f"{'Std Wealth':>12} {'Mean Rank':>10} {'Mean Growth':>12}"
+            f"{'Archetype':<25} {'N':>5} {'Mean Wealth':>12} {'Std Wealth':>12} {'Mean Rank':>10} {'Mean Growth':>12}"
         )
         print(header)
         print("-" * len(header))
@@ -234,9 +240,7 @@ def feature_correlations(all_data):
             if not run_rs:
                 print(f"{cond:<25} {'N/A':>10}")
                 continue
-            print(
-                f"{cond:<25} {_mean(run_rs):>10.4f} {_std(run_rs):>10.4f} {len(run_rs):>6}"
-            )
+            print(f"{cond:<25} {_mean(run_rs):>10.4f} {_std(run_rs):>10.4f} {len(run_rs):>6}")
 
 
 def rank_comparison(all_data):

@@ -30,8 +30,10 @@ def run_single(config_name: str, personas, num_rounds: int, run_id: int) -> dict
     m["run_id"] = run_id
     m["rounds"] = num_rounds
     m["elapsed_s"] = round(elapsed, 2)
-    print(f"done ({elapsed:.1f}s) — gini={m['gini']}, trades={m['trade_volume']['total_trades']}, "
-          f"avg_vol={m['avg_volatility']}")
+    print(
+        f"done ({elapsed:.1f}s) — gini={m['gini']}, trades={m['trade_volume']['total_trades']}, "
+        f"avg_vol={m['avg_volatility']}"
+    )
     return m
 
 
@@ -49,9 +51,9 @@ def run_experiment(
     all_results = []
 
     for config_name, personas in configs.items():
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Config: {config_name} ({len(personas)} agents, {num_rounds} rounds, {num_runs} runs)")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         config_results = []
         for run_id in range(num_runs):
@@ -89,6 +91,7 @@ def run_experiment(
     # Generate charts
     try:
         from charts import generate_all_charts
+
         generate_all_charts(all_results, output_path)
         print(f"Charts saved to {output_path}/")
     except ImportError:
@@ -101,26 +104,46 @@ def _write_summary_csv(results: list[dict], path: Path):
     """Write a flat CSV of key metrics per run."""
     with open(path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([
-            "config", "run_id", "rounds", "gini", "avg_volatility",
-            "market_efficiency", "total_trades", "total_trade_value",
-            "wealth_min", "wealth_max", "wealth_mean", "wealth_spread",
-            "elapsed_s",
-        ])
+        writer.writerow(
+            [
+                "config",
+                "run_id",
+                "rounds",
+                "gini",
+                "avg_volatility",
+                "market_efficiency",
+                "total_trades",
+                "total_trade_value",
+                "wealth_min",
+                "wealth_max",
+                "wealth_mean",
+                "wealth_spread",
+                "elapsed_s",
+            ]
+        )
         for r in results:
-            writer.writerow([
-                r["config"], r["run_id"], r["rounds"], r["gini"],
-                r["avg_volatility"], r["market_efficiency"],
-                r["trade_volume"]["total_trades"],
-                r["trade_volume"]["total_value"],
-                r["wealth"]["min"], r["wealth"]["max"],
-                r["wealth"]["mean"], r["wealth"]["spread"],
-                r["elapsed_s"],
-            ])
+            writer.writerow(
+                [
+                    r["config"],
+                    r["run_id"],
+                    r["rounds"],
+                    r["gini"],
+                    r["avg_volatility"],
+                    r["market_efficiency"],
+                    r["trade_volume"]["total_trades"],
+                    r["trade_volume"]["total_value"],
+                    r["wealth"]["min"],
+                    r["wealth"]["max"],
+                    r["wealth"]["mean"],
+                    r["wealth"]["spread"],
+                    r["elapsed_s"],
+                ]
+            )
 
 
 def _mean(vals: list[float]) -> float:
     return sum(vals) / len(vals) if vals else 0.0
+
 
 def _std(vals: list[float]) -> float:
     if len(vals) < 2:
@@ -133,8 +156,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run micro-economy experiments")
     parser.add_argument("--runs", type=int, default=10, help="Runs per configuration")
     parser.add_argument("--rounds", type=int, default=20, help="Rounds per simulation")
-    parser.add_argument("--configs", nargs="*", default=None,
-                        help="Specific configs to run (default: all)")
+    parser.add_argument("--configs", nargs="*", default=None, help="Specific configs to run (default: all)")
     parser.add_argument("--output", type=str, default="results", help="Output directory")
     args = parser.parse_args()
 
@@ -151,5 +173,4 @@ if __name__ == "__main__":
     print(f"Runs per config: {args.runs}")
     print(f"Rounds per run: {args.rounds}")
 
-    run_experiment(configs=configs, num_runs=args.runs, num_rounds=args.rounds,
-                   output_dir=args.output)
+    run_experiment(configs=configs, num_runs=args.runs, num_rounds=args.rounds, output_dir=args.output)

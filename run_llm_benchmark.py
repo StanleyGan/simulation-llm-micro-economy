@@ -56,8 +56,11 @@ def create_llm_agents_from_features(
             neutral_label = f"Agent_{letter}_{count}"
 
         persona = features_to_persona(
-            f, style=style, with_strategy=with_strategy,
-            neutral_label=neutral_label, drop_feature=drop_feature,
+            f,
+            style=style,
+            with_strategy=with_strategy,
+            neutral_label=neutral_label,
+            drop_feature=drop_feature,
         )
         inv = Inventory()
         budget = f.budget * 0.15
@@ -145,8 +148,11 @@ def run_experiment(
         # Same population as DGP (same seed)
         population = sample_population(ALL_ARCHETYPES, samples_per_archetype=agents_per_archetype)
         agents = create_llm_agents_from_features(
-            population, style=style, with_strategy=with_strategy,
-            neutral_labels=neutral_labels, drop_feature=drop_feature,
+            population,
+            style=style,
+            with_strategy=with_strategy,
+            neutral_labels=neutral_labels,
+            drop_feature=drop_feature,
         )
 
         print(f"Run {run_idx + 1}/{num_runs} (seed {seed}): ", end="", flush=True)
@@ -169,9 +175,7 @@ def run_experiment(
                 "preferences": {g.value: round(v, 4) for g, v in feat.preferences.items()},
                 "wealth_trajectory": [round(w, 2) for w in trajectory],
                 "final_wealth": round(trajectory[-1], 2),
-                "wealth_growth": round(
-                    (trajectory[-1] - trajectory[0]) / max(trajectory[0], 1), 4
-                ),
+                "wealth_growth": round((trajectory[-1] - trajectory[0]) / max(trajectory[0], 1), 4),
                 "final_budget": round(agent.budget, 2),
                 "prompt_style": style,
             }
@@ -206,24 +210,47 @@ def _save_results(results: list[dict], output_path: Path, style: str):
     csv_path = output_path / f"{prefix}_results.csv"
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([
-            "run_id", "name", "archetype",
-            "risk_appetite", "budget_initial", "patience", "production_skill",
-            "pref_food", "pref_tools", "pref_luxury", "pref_medicine",
-            "final_wealth", "wealth_growth", "rank_in_run", "final_budget",
-            "prompt_style",
-        ])
+        writer.writerow(
+            [
+                "run_id",
+                "name",
+                "archetype",
+                "risk_appetite",
+                "budget_initial",
+                "patience",
+                "production_skill",
+                "pref_food",
+                "pref_tools",
+                "pref_luxury",
+                "pref_medicine",
+                "final_wealth",
+                "wealth_growth",
+                "rank_in_run",
+                "final_budget",
+                "prompt_style",
+            ]
+        )
         for r in results:
-            writer.writerow([
-                r["run_id"], r["name"], r["archetype"],
-                r["risk_appetite"], r["budget_initial"], r["patience"],
-                r["production_skill"],
-                r["preferences"]["food"], r["preferences"]["tools"],
-                r["preferences"]["luxury"], r["preferences"]["medicine"],
-                r["final_wealth"], r["wealth_growth"],
-                r["rank_in_run"], r["final_budget"],
-                r["prompt_style"],
-            ])
+            writer.writerow(
+                [
+                    r["run_id"],
+                    r["name"],
+                    r["archetype"],
+                    r["risk_appetite"],
+                    r["budget_initial"],
+                    r["patience"],
+                    r["production_skill"],
+                    r["preferences"]["food"],
+                    r["preferences"]["tools"],
+                    r["preferences"]["luxury"],
+                    r["preferences"]["medicine"],
+                    r["final_wealth"],
+                    r["wealth_growth"],
+                    r["rank_in_run"],
+                    r["final_budget"],
+                    r["prompt_style"],
+                ]
+            )
     print(f"Summary CSV: {csv_path}")
 
     traj_path = output_path / f"{prefix}_trajectories.csv"
@@ -246,11 +273,11 @@ def _print_summary(results: list[dict], style: str):
     for r in results:
         by_archetype[r["archetype"]].append(r)
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"LLM Results (style: {style})")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     print(f"{'Archetype':<22} {'Wealth (mean±std)':<22} {'Growth':<14} {'Rank (mean)'}")
-    print(f"{'-'*70}")
+    print(f"{'-' * 70}")
 
     for archetype, agents in sorted(by_archetype.items()):
         wealths = [a["final_wealth"] for a in agents]
@@ -258,32 +285,43 @@ def _print_summary(results: list[dict], style: str):
         ranks = [a["rank_in_run"] for a in agents]
 
         w_mean = sum(wealths) / len(wealths)
-        w_std = (sum((w - w_mean)**2 for w in wealths) / len(wealths)) ** 0.5
+        w_std = (sum((w - w_mean) ** 2 for w in wealths) / len(wealths)) ** 0.5
         g_mean = sum(growths) / len(growths)
         r_mean = sum(ranks) / len(ranks)
 
         print(f"{archetype:<22} ${w_mean:>7.0f} ± ${w_std:>6.0f}   {g_mean:>+8.1%}     {r_mean:>5.1f}")
 
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run LLM simulation with DGP features")
-    parser.add_argument("--agents-per-archetype", type=int, default=10,
-                        help="Number of agents per archetype (default: 10, total = this × 6)")
+    parser.add_argument(
+        "--agents-per-archetype",
+        type=int,
+        default=10,
+        help="Number of agents per archetype (default: 10, total = this × 6)",
+    )
     parser.add_argument("--rounds", type=int, default=10, help="Rounds per simulation")
     parser.add_argument("--runs", type=int, default=10, help="Number of runs with different seeds")
-    parser.add_argument("--style", type=str, default="numeric", choices=["numeric", "narrative"],
-                        help="Prompt translation style")
+    parser.add_argument(
+        "--style", type=str, default="numeric", choices=["numeric", "narrative"], help="Prompt translation style"
+    )
     parser.add_argument("--output", type=str, default="llm_results", help="Output directory")
     parser.add_argument("--seed", type=int, default=42, help="Base random seed")
-    parser.add_argument("--with-strategy", action="store_true",
-                        help="Include CRRA strategy guide in system prompt")
-    parser.add_argument("--neutral-labels", action="store_true",
-                        help="A2 ablation: replace archetype names with neutral labels (Agent_A, Agent_B, ...)")
-    parser.add_argument("--drop-feature", type=str, default=None,
-                        choices=["risk", "patience", "preferences", "production_skill"],
-                        help="A5 ablation: omit a feature from the prompt")
+    parser.add_argument("--with-strategy", action="store_true", help="Include CRRA strategy guide in system prompt")
+    parser.add_argument(
+        "--neutral-labels",
+        action="store_true",
+        help="A2 ablation: replace archetype names with neutral labels (Agent_A, Agent_B, ...)",
+    )
+    parser.add_argument(
+        "--drop-feature",
+        type=str,
+        default=None,
+        choices=["risk", "patience", "preferences", "production_skill"],
+        help="A5 ablation: omit a feature from the prompt",
+    )
     args = parser.parse_args()
 
     run_experiment(

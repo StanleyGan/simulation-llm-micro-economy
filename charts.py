@@ -23,17 +23,19 @@ def _group_by_config(results: list[dict]) -> dict[str, list[dict]]:
 
 def _setup_style():
     plt.style.use("dark_background")
-    plt.rcParams.update({
-        "figure.facecolor": "#0f1117",
-        "axes.facecolor": "#1a1d27",
-        "axes.edgecolor": "#2e3345",
-        "grid.color": "#2e3345",
-        "text.color": "#e4e4e7",
-        "xtick.color": "#9ca3af",
-        "ytick.color": "#9ca3af",
-        "axes.labelcolor": "#9ca3af",
-        "font.size": 11,
-    })
+    plt.rcParams.update(
+        {
+            "figure.facecolor": "#0f1117",
+            "axes.facecolor": "#1a1d27",
+            "axes.edgecolor": "#2e3345",
+            "grid.color": "#2e3345",
+            "text.color": "#e4e4e7",
+            "xtick.color": "#9ca3af",
+            "ytick.color": "#9ca3af",
+            "axes.labelcolor": "#9ca3af",
+            "font.size": 11,
+        }
+    )
 
 
 def plot_gini_comparison(results: list[dict], output_path: Path):
@@ -100,7 +102,7 @@ def plot_trade_volume(results: list[dict], output_path: Path):
 
     fig, ax = plt.subplots(figsize=(10, 5))
     means = [sum(r["trade_volume"]["total_trades"] for r in groups[c]) / len(groups[c]) for c in configs]
-    ax.bar(configs, means, color=COLORS[:len(configs)], alpha=0.8, edgecolor="#2e3345")
+    ax.bar(configs, means, color=COLORS[: len(configs)], alpha=0.8, edgecolor="#2e3345")
 
     # Add error bars
     stds = []
@@ -210,7 +212,7 @@ def plot_summary_dashboard(results: list[dict], output_path: Path):
     # Trade volume bar chart
     ax = axes[1][1]
     means = [sum(r["trade_volume"]["total_trades"] for r in groups[c]) / len(groups[c]) for c in configs]
-    ax.bar(configs, means, color=COLORS[:len(configs)], alpha=0.8)
+    ax.bar(configs, means, color=COLORS[: len(configs)], alpha=0.8)
     ax.set_title("Trade Volume", fontweight="bold")
     ax.set_ylabel("Total Trades (mean)")
     ax.tick_params(axis="x", rotation=25, labelsize=8)

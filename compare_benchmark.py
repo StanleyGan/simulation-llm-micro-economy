@@ -104,7 +104,7 @@ def compare_results(dgp_results: list[dict], llm_results: list[dict]) -> dict:
         print(f"  Run {run_id} (n={n_agents}): Spearman ρ = {rho:.3f}")
 
     mean_rho = sum(rank_correlations) / len(rank_correlations)
-    std_rho = math.sqrt(sum((r - mean_rho)**2 for r in rank_correlations) / len(rank_correlations))
+    std_rho = math.sqrt(sum((r - mean_rho) ** 2 for r in rank_correlations) / len(rank_correlations))
     print(f"\n  Spearman ρ across {len(runs)} runs: {mean_rho:.3f} ± {std_rho:.3f}")
     if mean_rho > 0.7:
         print("  → Strong agreement: LLM rankings closely match ground truth")
@@ -114,9 +114,9 @@ def compare_results(dgp_results: list[dict], llm_results: list[dict]) -> dict:
         print("  → Weak agreement: LLM rankings diverge significantly from ground truth")
 
     # --- Archetype-level comparison (aggregated across all runs) ---
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print(f"{'Archetype':<22} {'GT Rank':<12} {'LLM Rank':<12} {'GT Wealth':<14} {'LLM Wealth':<14} {'Diff'}")
-    print(f"{'='*80}")
+    print(f"{'=' * 80}")
 
     dgp_by_arch = defaultdict(list)
     llm_by_arch = defaultdict(list)
@@ -140,13 +140,17 @@ def compare_results(dgp_results: list[dict], llm_results: list[dict]) -> dict:
             f"{arch:<22} {dgp_rank:>8.1f}     {llm_rank:>8.1f}"
             f"     ${dgp_wealth:>9.0f}     ${llm_wealth:>9.0f}   {wealth_diff:>+6.1f}%"
         )
-        arch_comparison.append({
-            "archetype": arch,
-            "dgp_rank": dgp_rank, "llm_rank": llm_rank,
-            "dgp_wealth": dgp_wealth, "llm_wealth": llm_wealth,
-        })
+        arch_comparison.append(
+            {
+                "archetype": arch,
+                "dgp_rank": dgp_rank,
+                "llm_rank": llm_rank,
+                "dgp_wealth": dgp_wealth,
+                "llm_wealth": llm_wealth,
+            }
+        )
 
-    print(f"{'='*80}")
+    print(f"{'=' * 80}")
 
     # --- Overall archetype ranking correlation ---
     # Re-rank the mean ranks to ordinal (1-6) for Spearman
@@ -168,47 +172,60 @@ def compare_results(dgp_results: list[dict], llm_results: list[dict]) -> dict:
     }
 
 
-def plot_comparison(dgp_results: list[dict], llm_results: list[dict],
-                    comparison: dict, output_path: Path):
+def plot_comparison(dgp_results: list[dict], llm_results: list[dict], comparison: dict, output_path: Path):
     """Generate comparison charts."""
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     ARCH_COLORS = {
-        'cautious_farmer': '#22c55e', 'aggressive_merchant': '#ef4444',
-        'pragmatic_doctor': '#3b82f6', 'shrewd_speculator': '#f59e0b',
-        'fair_toolmaker': '#8b5cf6', 'survivalist': '#06b6d4',
+        "cautious_farmer": "#22c55e",
+        "aggressive_merchant": "#ef4444",
+        "pragmatic_doctor": "#3b82f6",
+        "shrewd_speculator": "#f59e0b",
+        "fair_toolmaker": "#8b5cf6",
+        "survivalist": "#06b6d4",
     }
 
     dark = {
-        'figure.facecolor': '#0f1117', 'axes.facecolor': '#1a1d27',
-        'axes.edgecolor': '#2e3345', 'axes.labelcolor': '#9ca3af',
-        'text.color': '#e4e4e7', 'xtick.color': '#9ca3af',
-        'ytick.color': '#9ca3af', 'grid.color': '#2e3345',
-        'legend.facecolor': '#1a1d27', 'legend.edgecolor': '#2e3345',
+        "figure.facecolor": "#0f1117",
+        "axes.facecolor": "#1a1d27",
+        "axes.edgecolor": "#2e3345",
+        "axes.labelcolor": "#9ca3af",
+        "text.color": "#e4e4e7",
+        "xtick.color": "#9ca3af",
+        "ytick.color": "#9ca3af",
+        "grid.color": "#2e3345",
+        "legend.facecolor": "#1a1d27",
+        "legend.edgecolor": "#2e3345",
     }
     plt.rcParams.update(dark)
 
     arch_comp = comparison["archetype_comparison"]
-    archetypes = [a["archetype"].replace('_', ' ') for a in arch_comp]
+    archetypes = [a["archetype"].replace("_", " ") for a in arch_comp]
 
     # --- Chart 1: Side-by-side wealth comparison ---
     fig, ax = plt.subplots(figsize=(12, 6))
     x = range(len(archetypes))
     width = 0.35
-    ax.bar([i - width/2 for i in x],
-           [a["dgp_wealth"] for a in arch_comp],
-           width, label='Ground Truth', color='#6366f1', alpha=0.8)
-    ax.bar([i + width/2 for i in x],
-           [a["llm_wealth"] for a in arch_comp],
-           width, label='LLM', color='#f59e0b', alpha=0.8)
+    ax.bar(
+        [i - width / 2 for i in x],
+        [a["dgp_wealth"] for a in arch_comp],
+        width,
+        label="Ground Truth",
+        color="#6366f1",
+        alpha=0.8,
+    )
+    ax.bar(
+        [i + width / 2 for i in x], [a["llm_wealth"] for a in arch_comp], width, label="LLM", color="#f59e0b", alpha=0.8
+    )
     ax.set_xticks(list(x))
-    ax.set_xticklabels(archetypes, rotation=20, ha='right')
+    ax.set_xticklabels(archetypes, rotation=20, ha="right")
     ax.set_ylabel("Mean Final Wealth ($)")
     ax.set_title(f"Ground Truth vs LLM: Final Wealth by Archetype (ρ = {comparison['archetype_rho']:.3f})")
     ax.legend()
-    ax.grid(True, axis='y', alpha=0.3)
+    ax.grid(True, axis="y", alpha=0.3)
     fig.tight_layout()
     fig.savefig(output_path / "ground_truth_vs_llm_wealth.png", dpi=150)
     plt.close(fig)
@@ -216,19 +233,24 @@ def plot_comparison(dgp_results: list[dict], llm_results: list[dict],
 
     # --- Chart 2: Side-by-side rank comparison ---
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.bar([i - width/2 for i in x],
-           [a["dgp_rank"] for a in arch_comp],
-           width, label='Ground Truth', color='#6366f1', alpha=0.8)
-    ax.bar([i + width/2 for i in x],
-           [a["llm_rank"] for a in arch_comp],
-           width, label='LLM', color='#f59e0b', alpha=0.8)
+    ax.bar(
+        [i - width / 2 for i in x],
+        [a["dgp_rank"] for a in arch_comp],
+        width,
+        label="Ground Truth",
+        color="#6366f1",
+        alpha=0.8,
+    )
+    ax.bar(
+        [i + width / 2 for i in x], [a["llm_rank"] for a in arch_comp], width, label="LLM", color="#f59e0b", alpha=0.8
+    )
     ax.set_xticks(list(x))
-    ax.set_xticklabels(archetypes, rotation=20, ha='right')
+    ax.set_xticklabels(archetypes, rotation=20, ha="right")
     ax.set_ylabel("Mean Rank (1 = best)")
     ax.set_title("Ground Truth vs LLM: Average Rank by Archetype")
     ax.invert_yaxis()
     ax.legend()
-    ax.grid(True, axis='y', alpha=0.3)
+    ax.grid(True, axis="y", alpha=0.3)
     fig.tight_layout()
     fig.savefig(output_path / "ground_truth_vs_llm_rank.png", dpi=150)
     plt.close(fig)
@@ -237,15 +259,19 @@ def plot_comparison(dgp_results: list[dict], llm_results: list[dict],
     # --- Chart 3: Per-run rank correlation distribution ---
     fig, ax = plt.subplots(figsize=(10, 5))
     rhos = comparison["per_run_rho"]
-    ax.bar(range(len(rhos)), rhos, color='#6366f1', alpha=0.7, edgecolor='#6366f1')
-    ax.axhline(y=comparison["mean_rho"], color='#f59e0b', linestyle='--',
-               label=f'Mean ρ = {comparison["mean_rho"]:.3f} ± {comparison["std_rho"]:.3f}')
+    ax.bar(range(len(rhos)), rhos, color="#6366f1", alpha=0.7, edgecolor="#6366f1")
+    ax.axhline(
+        y=comparison["mean_rho"],
+        color="#f59e0b",
+        linestyle="--",
+        label=f"Mean ρ = {comparison['mean_rho']:.3f} ± {comparison['std_rho']:.3f}",
+    )
     ax.set_xlabel("Run")
     ax.set_ylabel("Spearman ρ")
     ax.set_title("Rank Correlation per Run (Ground Truth vs LLM)")
     ax.set_ylim(-1.1, 1.1)
     ax.legend()
-    ax.grid(True, axis='y', alpha=0.3)
+    ax.grid(True, axis="y", alpha=0.3)
     fig.tight_layout()
     fig.savefig(output_path / "ground_truth_vs_llm_correlation.png", dpi=150)
     plt.close(fig)
@@ -275,18 +301,25 @@ def plot_comparison(dgp_results: list[dict], llm_results: list[dict],
     n_agents = comparison.get("agents_per_run", 60)
     for k in common:
         arch = dgp_by_key[k]["archetype"]
-        color = ARCH_COLORS.get(arch, '#888')
-        ax.scatter(dgp_by_key[k]["rank_in_run"], llm_by_key[k]["rank_in_run"],
-                   c=color, alpha=0.3, s=20, edgecolors='white', linewidth=0.3)
+        color = ARCH_COLORS.get(arch, "#888")
+        ax.scatter(
+            dgp_by_key[k]["rank_in_run"],
+            llm_by_key[k]["rank_in_run"],
+            c=color,
+            alpha=0.3,
+            s=20,
+            edgecolors="white",
+            linewidth=0.3,
+        )
 
     # Add legend
     for arch, color in ARCH_COLORS.items():
-        ax.scatter([], [], c=color, label=arch.replace('_', ' '), s=40)
-    ax.plot([0.5, n_agents + 0.5], [0.5, n_agents + 0.5], 'w--', alpha=0.3, label='Perfect agreement')
+        ax.scatter([], [], c=color, label=arch.replace("_", " "), s=40)
+    ax.plot([0.5, n_agents + 0.5], [0.5, n_agents + 0.5], "w--", alpha=0.3, label="Perfect agreement")
     ax.set_xlabel("GT Rank")
     ax.set_ylabel("LLM Rank")
     ax.set_title("Per-Agent Rank: Ground Truth vs LLM")
-    ax.legend(fontsize=8, loc='upper left')
+    ax.legend(fontsize=8, loc="upper left")
     ax.set_xlim(0.5, n_agents + 0.5)
     ax.set_ylim(0.5, n_agents + 0.5)
     ax.grid(True, alpha=0.3)
@@ -298,12 +331,11 @@ def plot_comparison(dgp_results: list[dict], llm_results: list[dict],
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Compare Ground Truth vs LLM results")
-    parser.add_argument("--dgp", type=str, default="dgp_results/dgp_ground_truth.json",
-                        help="Path to DGP results JSON")
-    parser.add_argument("--llm", type=str, default="llm_results/llm_numeric_results.json",
-                        help="Path to LLM results JSON")
-    parser.add_argument("--output", type=str, default="comparison_results",
-                        help="Output directory for charts")
+    parser.add_argument("--dgp", type=str, default="dgp_results/dgp_ground_truth.json", help="Path to DGP results JSON")
+    parser.add_argument(
+        "--llm", type=str, default="llm_results/llm_numeric_results.json", help="Path to LLM results JSON"
+    )
+    parser.add_argument("--output", type=str, default="comparison_results", help="Output directory for charts")
     parser.add_argument("--no-charts", action="store_true", help="Skip chart generation")
     args = parser.parse_args()
 
